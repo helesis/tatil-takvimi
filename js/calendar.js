@@ -24,7 +24,7 @@
     for (const t of TT.all()) {
       t.flights.forEach(f => {
         if (!f.date) return;
-        const mark = f.mode === "train" ? "🚆" : "✈";
+        const mark = f.mode === "train" ? "🚆" : f.mode === "car" ? "🚗" : "✈";
         marks[f.date] = (marks[f.date] || "") + mark;
       });
       t.hotels.forEach(h => {
@@ -286,7 +286,7 @@
         lines.push("BEGIN:VEVENT");
         lines.push(`UID:${f.id}-${t.id}@tatilex`);
         lines.push(`DTSTAMP:${stamp}`);
-        const kind = f.mode === "train" ? "Tren" : (f.dir === "out" ? "Gidiş uçuşu" : "Dönüş uçuşu");
+        const kind = f.mode === "train" ? "Tren" : f.mode === "car" ? "Araç yolculuğu" : (f.dir === "out" ? "Gidiş uçuşu" : "Dönüş uçuşu");
         const timeTxt = f.time ? (f.timeArr ? ` ${f.time}-${f.timeArr}` : ` ${f.time}`) : "";
         lines.push(`SUMMARY:${icsEscape(`${kind}: ${f.from}-${f.to}${timeTxt}${f.no ? ` (${f.no})` : ""} — ${t.name}`)}`);
         if (f.time) {
@@ -379,15 +379,18 @@
         const fromPt = [f.fromPos.lat, f.fromPos.lng];
         const toPt = [f.toPos.lat, f.toPos.lng];
         const isTrain = f.mode === "train";
+        const isCar = f.mode === "car";
         const dist = Math.round(haversineKm(f.fromPos.lat, f.fromPos.lng, f.toPos.lat, f.toPos.lng));
         markers.push(fromPt, toPt);
+        /* renkler: uçak mavi (gidiş)/teal (dönüş) · tren amber · araç mor */
+        const lineColor = isCar ? "#8b5cf6" : isTrain ? "#f59e0b" : (f.dir === "out" ? "#2563eb" : "#0d9488");
         L.polyline([fromPt, toPt], {
-          color: isTrain ? "#f59e0b" : (f.dir === "out" ? "#2563eb" : "#0d9488"),
+          color: lineColor,
           weight: 2.5,
-          dashArray: isTrain ? "3 7" : "8 6",
+          dashArray: isCar ? "10 8" : "3 7",
           opacity: 0.85
         }).addTo(markerLayer)
-          .bindPopup(`<b>${tLabel}</b><br>${isTrain ? "🚆 Tren" : (f.dir === "out" ? "🛫 Gidiş" : "🛬 Dönüş")}: ${f.from} → ${f.to}<br><small>${longDate(f.date)}${f.time ? ` · Saat ${f.time}${f.timeArr ? " → " + f.timeArr : ""}` : ""} · ≈${dist} km</small>`);
+          .bindPopup(`<b>${tLabel}</b><br>${isCar ? "🚗 Araç" : isTrain ? "🚆 Tren" : (f.dir === "out" ? "🛫 Gidiş" : "🛬 Dönüş")}: ${f.from} → ${f.to}<br><small>${longDate(f.date)}${f.time ? ` · Saat ${f.time}${f.timeArr ? " → " + f.timeArr : ""}` : ""} · ≈${dist} km</small>`);
       });
 
       data.hotels.forEach(h => {
@@ -423,11 +426,12 @@
           </li>`).join("");
       const routes = data.flights.map(f => {
         const isTrain = f.mode === "train";
+        const isCar = f.mode === "car";
         const dist = Math.round(haversineKm(f.fromPos.lat, f.fromPos.lng, f.toPos.lat, f.toPos.lng));
         return `
           <li data-act="route" data-fl="${f.fromPos.lat},${f.fromPos.lng},${f.toPos.lat},${f.toPos.lng}">
-            <span class="m-emoji">${isTrain ? "🚆" : "✈️"}</span>
-            <span>${isTrain ? "Tren" : (f.dir === "out" ? "Gidiş" : "Dönüş")}: <b>${f.from} → ${f.to}</b><br>
+            <span class="m-emoji">${isCar ? "🚗" : isTrain ? "🚆" : "✈️"}</span>
+            <span>${isCar ? "Araç" : isTrain ? "Tren" : (f.dir === "out" ? "Gidiş" : "Dönüş")}: <b>${f.from} → ${f.to}</b><br>
             <small>${parseKey(f.date).getDate()} ${MONTH_NAMES[parseKey(f.date).getMonth()]}${f.time ? ` · ${f.time}${f.timeArr ? " → " + f.timeArr : ""}` : ""} · ≈${dist} km</small></span>
           </li>`;
       }).join("");

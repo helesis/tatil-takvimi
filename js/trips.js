@@ -4,10 +4,11 @@
    - Münih & Viyana (uçak + tren)
    - Vietnam: 29 Kas – 6 Ara 2026 (AYT–IST–HAN, HAN–DAD–HAN, HAN–IST–AYT)
    - Mısır: 13-19 Aralık 2026, Kahire & Şarm El Şeyh (XQ224 gidiş / PC5089 dönüş)
+   - Çanakkale: 27-29 Aralık 2026, Hotel Caeli & Caeli Winery (araç yolculuğu)
    ============================================================ */
 
 const TT = (() => {
-  const LS_KEY = "tatilTakvimi.trips.v11";
+  const LS_KEY = "tatilTakvimi.trips.v12";
 
   const DEFAULT_TRIPS = [
     {
@@ -144,6 +145,33 @@ const TT = (() => {
         { id: "fly-ret-1", dir: "return", mode: "fly", date: "2026-12-19", from: "SSH", to: "AYT", time: "02:15", timeArr: "05:10", no: "PC5089", note: "Pegasus · rezervasyon 2HZ1MU" }
       ],
       hotels: []
+    },
+    {
+      id: "caeli-canakkale-2026",
+      name: "Çanakkale · Hotel Caeli",
+      emoji: "🍷",
+      startDate: "2026-12-27",
+      endDate: "2026-12-29",
+      flights: [
+        {
+          id: "car-out-1", dir: "out", mode: "car", date: "2026-12-27",
+          from: "AYT", to: "CAN", time: "08:00", timeArr: "", no: "",
+          note: "araç ile gidiş · çıkış 08:00"
+        },
+        {
+          id: "car-ret-1", dir: "return", mode: "car", date: "2026-12-29",
+          from: "CAN", to: "AYT", time: "12:00", timeArr: "", no: "",
+          note: "araç ile dönüş · çıkış 12:00"
+        }
+      ],
+      hotels: [
+        {
+          id: "caeli-hotel", name: "Hotel Caeli & Caeli Winery", city: "Çanakkale", area: "bağ evleri / bağ bölgesi",
+          checkIn: "2026-12-27", checkOut: "2026-12-29", price: "", link: "",
+          note: "2 gece · bağ konaklaması", coords: ""
+        }
+      ],
+      itinerary: []
     }
   ];
 
@@ -213,11 +241,12 @@ const TT = (() => {
   }
 
   /* ---------- uçuş CRUD ---------- */
+  const CLEAN_MODES = ["fly", "train", "car"];   /* ✈ uçak · 🚆 tren · 🚗 araç */
   function saveFlight(tripId, data) {
     const t = trips.find(x => x.id === tripId);
     if (!t) return;
     const clean = { ...data };
-    clean.mode = clean.mode === "train" ? "train" : "fly";
+    clean.mode = CLEAN_MODES.includes(clean.mode) ? clean.mode : "fly";
     clean.time = (clean.time || "").trim();
     clean.timeArr = (clean.timeArr || "").trim();
     clean.no = (clean.no || "").trim();
@@ -440,16 +469,17 @@ const TT = (() => {
     const from = PLACES[f.from] || { name: f.from };
     const to = PLACES[f.to] || { name: f.to };
     const isTrain = f.mode === "train";
+    const isCar = f.mode === "car";
     const dist = PLACES[f.from] && PLACES[f.to]
       ? ` · ≈ ${Math.round(haversineKm(PLACES[f.from].lat, PLACES[f.from].lng, PLACES[f.to].lat, PLACES[f.to].lng))} km`
       : "";
-    const emoji = isTrain ? "🚆" : (f.dir === "out" ? "🛫" : "🛬");
-    const dirLbl = isTrain ? "Tren" : (f.dir === "out" ? "Gidiş" : (f.dir === "leg" ? "Ara güzergah" : "Dönüş"));
+    const emoji = isCar ? "🚗" : isTrain ? "🚆" : (f.dir === "out" ? "🛫" : "🛬");
+    const dirLbl = isCar ? "Araç" : isTrain ? "Tren" : (f.dir === "out" ? "Gidiş" : (f.dir === "leg" ? "Ara güzergah" : "Dönüş"));
     const timeTxt = f.time
       ? (f.timeArr ? `Saat ${esc(f.time)} → ${esc(f.timeArr)}` : `Saat ${esc(f.time)}`)
       : "";
     return `
-      <div class="f-card ${isTrain ? "leg" : (f.dir === "out" ? "out" : "return")}">
+      <div class="f-card ${isCar ? "car" : isTrain ? "leg" : (f.dir === "out" ? "out" : "return")}">
         <div class="f-dir">
           <div class="emoji">${emoji}</div>
           <div class="dir-lbl">${dirLbl}</div>
@@ -476,13 +506,15 @@ const TT = (() => {
       : findFlight(t, formFlight);
     if (!f) return "";
     const isTrain = f.mode === "train";
+    const isCar = f.mode === "car";
     return `
       <form class="card" style="margin-top:10px" data-form="flight">
         <div class="form-grid">
           <label>Ulaşım türü
             <select name="mode">
-              <option value="fly" ${isTrain ? "" : "selected"}>✈️ Uçak</option>
+              <option value="fly" ${isTrain || isCar ? "" : "selected"}>✈️ Uçak</option>
               <option value="train" ${isTrain ? "selected" : ""}>🚆 Tren / Ara güzergah</option>
+              <option value="car" ${isCar ? "selected" : ""}>🚗 Araba (karayolu)</option>
             </select>
           </label>
           <label>Yön

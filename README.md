@@ -23,7 +23,7 @@ Harita (OpenStreetMap/Leaflet CDN) ve bayram verileri internet ister; diğer her
 | 🗺️ Harita | Havalimanı otel işaretçileri, uçuş rotaları (kesikli çizgiler), mesafe bilgisi, yan panelde tıklayarak odak widescreen |
 
 - **Takvimi indir (.ics)** düğmesiyle tüm tatiller + gezilerdi etkinlikleri Google/Apple takvimine aktarılabilir.
-- Tüm gezi/otel verileri `localStorage`'da tutulur (anahtar: `tatilTakvimi.trips.v11`). Tarayıcıyı değiştirirken veriler taşınmaz, gerekirse ICS indirip yedekleyin.
+- Tüm gezi/otel verileri `localStorage`'da tutulur (anahtar: `tatilTakvimi.trips.v12`). Tarayıcıyı değiştirirken veriler taşınmaz, gerekirse ICS indirip yedekleyin.
 
 ## Veriler
 
@@ -41,5 +41,6 @@ Harita (OpenStreetMap/Leaflet CDN) ve bayram verileri internet ister; diğer her
 Gezi içindeki her segment için "Ulaşım türü" seçilebilir:
 - ✈️ **Uçak** — havalimanları arasında kesikli mavi/yeşil rota
 - 🚆 **Tren / Ara güzergah** — garları (örn. München Hbf → Wien Hbf) arasında turuncu noktalı rota; kalkış/varış saati, sefer kodu ve bilet notu desteklenir
+- 🚗 **Araba (karayolu)** — mor kesikli rota; saat desteği vardır (örn. AYT → Çanakkale gidiş-dönüş)
 
 Gar noktaları `PLACES` içine eklenebilir (mode: "train").
