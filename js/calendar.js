@@ -364,64 +364,86 @@
     if (!map || !markerLayer) return;
     markerLayer.clearLayers();
     const side = document.getElementById("mapSide");
-    const data = TT.mapData();
-    const airports = TT.airportsUsed();
     const markers = [];
 
-    /* havalimanı işaretçileri */
-    airports.forEach(a => {
-      markers.push({ lat: a.lat, lng: a.lng });
+    /* Veri: AKTİF gezi değil — TÜM geziler haritada gösterilir */
+    const trips = TT.all()
+      .map(t => ({ t, data: TT.mapData(t) }))
+      .filter(x => x.data.flights.length || x.data.hotels.length);
+
+    /* ---- Uçuş/tren rotaları + oteller (gezi başına) ---- */
+    trips.forEach(({ t, data }) => {
+      const tLabel = esc(`${t.emoji || "🧳"} ${t.name}`);
+
+      data.flights.forEach(f => {
+        const fromPt = [f.fromPos.lat, f.fromPos.lng];
+        const toPt = [f.toPos.lat, f.toPos.lng];
+        const isTrain = f.mode === "train";
+        const dist = Math.round(haversineKm(f.fromPos.lat, f.fromPos.lng, f.toPos.lat, f.toPos.lng));
+        markers.push(fromPt, toPt);
+        L.polyline([fromPt, toPt], {
+          color: isTrain ? "#f59e0b" : (f.dir === "out" ? "#2563eb" : "#0d9488"),
+          weight: 2.5,
+          dashArray: isTrain ? "3 7" : "8 6",
+          opacity: 0.85
+        }).addTo(markerLayer)
+          .bindPopup(`<b>${tLabel}</b><br>${isTrain ? "🚆 Tren" : (f.dir === "out" ? "🛫 Gidiş" : "🛬 Dönüş")}: ${f.from} → ${f.to}<br><small>${longDate(f.date)}${f.time ? ` · Saat ${f.time}${f.timeArr ? " → " + f.timeArr : ""}` : ""} · ≈${dist} km</small>`);
+      });
+
+      data.hotels.forEach(h => {
+        markers.push([h.pos.lat, h.pos.lng]);
+        L.marker([h.pos.lat, h.pos.lng], { icon: poiIconHtml("hotel-icon", "🏨") })
+          .addTo(markerLayer)
+          .bindPopup(`<b>${esc(h.name)}</b><br><small>${tLabel}</small><br>${esc(h.city)}${h.area ? ", " + esc(h.area) : ""}${h.checkIn ? `<br>${h.checkIn} → ${h.checkOut || "—"}` : ""}${h.link ? `<br><a href="${esc(h.link)}" target="_blank" rel="noopener">otel sayfası</a>` : ""}`);
+      });
+    });
+
+    /* ---- Havalimanı işaretçileri (tüm gezilerden toplanır, tekil) ---- */
+    const airportSet = new Map();
+    trips.forEach(({ t }) => {
+      TT.airportsUsed(t).forEach(a => {
+        if (!airportSet.has(a.code)) airportSet.set(a.code, a);
+      });
+    });
+    airportSet.forEach(a => {
+      markers.push([a.lat, a.lng]);
       L.marker([a.lat, a.lng], { icon: poiIconHtml("poi-icon", a.code) })
         .addTo(markerLayer)
         .bindPopup(`<b>${a.code}</b> ${a.name}`);
     });
 
-    /* uçuş/tren rotaları */
-    const routeRows = [];
-    data.flights.forEach(f => {
-      const fromPt = [f.fromPos.lat, f.fromPos.lng];
-      const toPt = [f.toPos.lat, f.toPos.lng];
-      const isTrain = f.mode === "train";
-      const dist = Math.round(haversineKm(f.fromPos.lat, f.fromPos.lng, f.toPos.lat, f.toPos.lng));
-      L.polyline([fromPt, toPt], {
-        color: isTrain ? "#f59e0b" : (f.dir === "out" ? "#2563eb" : "#0d9488"),
-        weight: 2.5,
-        dashArray: isTrain ? "3 7" : "8 6",
-        opacity: 0.85
-      }).addTo(markerLayer)
-        .bindPopup(`${isTrain ? "🚆 Tren" : (f.dir === "out" ? "🛫 Gidiş" : "🛬 Dönüş")}: ${f.from} → ${f.to}<br><small>${longDate(f.date)}${f.time ? ` · Saat ${f.time}${f.timeArr ? " → " + f.timeArr : ""}` : ""} · ≈${dist} km</small>`);
-      routeRows.push(`
-        <li data-act="route" data-fl="${f.fromPos.lat},${f.fromPos.lng},${f.toPos.lat},${f.toPos.lng}">
-          <span class="m-emoji">${isTrain ? "🚆" : "✈️"}</span>
-          <span>${isTrain ? "Tren" : (f.dir === "out" ? "Gidiş" : "Dönüş")}: <b>${f.from} → ${f.to}</b><br>
-          <small>${parseKey(f.date).getDate()} ${MONTH_NAMES[parseKey(f.date).getMonth()]}${f.time ? ` · ${f.time}${f.timeArr ? " → " + f.timeArr : ""}` : ""} · ≈${dist} km</small></span>
-        </li>`);
-    });
-
-    /* oteller */
-    const hotelRows = [];
-    data.hotels.forEach(h => {
-      markers.push(h.pos);
-      L.marker([h.pos.lat, h.pos.lng], { icon: poiIconHtml("hotel-icon", "🏨") })
-        .addTo(markerLayer)
-        .bindPopup(`<b>${esc(h.name)}</b><br>${esc(h.city)}${h.area ? ", " + esc(h.area) : ""}${h.checkIn ? `<br>${h.checkIn} → ${h.checkOut || "—"}` : ""}${h.link ? `<br><a href="${esc(h.link)}" target="_blank" rel="noopener">otel sayfası</a>` : ""}`);
-      hotelRows.push(`
+    /* ---- Yan panel: gezi başına grup ---- */
+    side.innerHTML = trips.map(({ t, data }) => {
+      const label = esc(`${t.emoji || "🧳"} ${t.name}`);
+      const airports = [...new Set(data.flights.flatMap(f => [f.from, f.to]))]
+        .filter(k => PLACES[k])
+        .map(k => `
+          <li data-act="focus" data-lat="${PLACES[k].lat}" data-lng="${PLACES[k].lng}" data-zoom="12">
+            <span class="m-emoji">🛫</span><span><b>${k}</b> ${esc(PLACES[k].name)}</span>
+          </li>`).join("");
+      const routes = data.flights.map(f => {
+        const isTrain = f.mode === "train";
+        const dist = Math.round(haversineKm(f.fromPos.lat, f.fromPos.lng, f.toPos.lat, f.toPos.lng));
+        return `
+          <li data-act="route" data-fl="${f.fromPos.lat},${f.fromPos.lng},${f.toPos.lat},${f.toPos.lng}">
+            <span class="m-emoji">${isTrain ? "🚆" : "✈️"}</span>
+            <span>${isTrain ? "Tren" : (f.dir === "out" ? "Gidiş" : "Dönüş")}: <b>${f.from} → ${f.to}</b><br>
+            <small>${parseKey(f.date).getDate()} ${MONTH_NAMES[parseKey(f.date).getMonth()]}${f.time ? ` · ${f.time}${f.timeArr ? " → " + f.timeArr : ""}` : ""} · ≈${dist} km</small></span>
+          </li>`;
+      }).join("");
+      const hotels = data.hotels.map(h => `
         <li data-act="focus" data-lat="${h.pos.lat}" data-lng="${h.pos.lng}" data-zoom="14">
           <span class="m-emoji">🏨</span>
           <span><b>${esc(h.name)}</b><br><small>${esc(h.city)}${h.area ? ", " + esc(h.area) : ""}</small></span>
-        </li>`);
-    });
-
-    /* yan panel */
-    const airportRows = airports.map(a => `
-      <li data-act="focus" data-lat="${a.lat}" data-lng="${a.lng}" data-zoom="12">
-        <span class="m-emoji">🛫</span><span><b>${a.code}</b> ${a.name}</span>
-      </li>`).join("");
-
-    side.innerHTML = `
-      <h3>Lokasyonlar</h3><ul>${airportRows || "<li><small>Uçuş yok</small></li>"}</ul>
-      <h3>Rotalar</h3><ul>${routeRows.join("") || "<li><small>Rota yok</small></li>"}</ul>
-      <h3>Oteller</h3><ul>${hotelRows.join("") || "<li><small>Otel yok</small></li>"}</ul>`;
+        </li>`).join("");
+      return `
+        <div class="m-trip">
+          <h3>${label}</h3>
+          <h4>Lokasyonlar</h4><ul>${airports || "<li><small>yok</small></li>"}</ul>
+          <h4>Rotalar</h4><ul>${routes || "<li><small>yok</small></li>"}</ul>
+          ${hotels ? `<h4>Oteller</h4><ul>${hotels}</ul>` : ""}
+        </div>`;
+    }).join("") || `<p class="muted">Haritada gösterilecek gezi verisi yok.</p>`;
 
     side.querySelectorAll("[data-act]").forEach(li => {
       li.addEventListener("click", () => {

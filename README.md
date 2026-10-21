@@ -28,6 +28,7 @@ Harita (OpenStreetMap/Leaflet CDN) ve bayram verileri internet ister; diğer her
 ## Veriler
 
 - **Resmi tatiller:** `js/holidays.js` — 2026 ve 2027 Diyanet İşleri Başkanlığı takvimine göre doğrulanmıştır.
+- **Tasarım rehberi:** `DESIGN.md` — renk tokenları, ölçekler ve bileşen kuralları (yeni stiller her zaman buradaki token'larla eklenir).
 - **Havalimanları & şehir merkezleri:** `js/holidays.js` içindeki `PLACES` ve `CITY_CENTERS` haritaya yeni nokta eklemek isterseniz burası genişletilir.
 
 ## Bilinen Adımlar

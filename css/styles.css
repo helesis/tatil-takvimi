@@ -1,20 +1,68 @@
+/* ============================================================
+   Tatil Takvimi — TASARIM SİSTEMİ
+   Rehber: DESIGN.md  |  Anahtar değişkenler: :root bloğu
+   ------------------------------------------------------------
+   KURALLAR:
+   1) Her bileşen rengini/gölgesini/yarıçapı yalnız token'dan alır.
+      Yeni hex değer asla doğrudan selector'a yazılmaz (istisna:
+      Leaflet harita katmanı fb kontrastı).
+   2) Boşluk ölçeği 4px grid: 4 · 8 · 12 · 16 · 20 · 26 · 40
+   3) Yarıçap ölçeği: --radius-sm(9) kart içi, --radius(14) kart,
+      --radius-lg(18) hap/panel, --radius-full(999) çip/takvim
+   4) Etkileşim: hover = hafif yükselme/gölge, focus = görünen ring,
+      activation = renk dolgusu. transition .18s ease.
+   5) Kontrast: metin --ink (#1e2233), ikincil metin --muted,
+      on-white asla --muted'ten daha açık olmaz (WCAG AA).
+   ============================================================ */
+
+/* ---------- 1. TASARIM TOKENLARI ---------- */
 :root {
-  --bg: #f5f6fa;
-  --card: #ffffff;
-  --ink: #1e2233;
-  --muted: #6b7280;
-  --line: #e5e7eb;
-  --accent: #6366f1;
-  --hol: #dc2626;
-  --hol-bg: #fee2e2;
-  --half: #b45309;
-  --half-bg: #fef3c7;
-  --teal: #0d9488;
-  --teal-bg: #ccfbf1;
-  --weekend-bg: #eef1f6;
-  --radius: 14px;
+  /* Marka + primer (indigo ailesi) */
+  --brand-900: #0e0b33;
+  --brand-700: #312e81;
+  --brand-500: #6366f1;     /* --accent ile aynı: primary düğme, aktif çip */
+  --accent:    #6366f1;
+  --accent-soft: rgba(99, 102, 241, .16);
+  --brand-300: #a5b4fc;     /* gradyan metin ucu, ince detay */
+  --sky-500:   #3b82f6;     /* gidiş uçuş rengi */
+  --sky-100:   #dbeafe;
+
+  /* Durum renk aileleri (yapı: *  = dolgu, *-bg = zemin, *-line = kenar) */
+  --hol:       #dc2626;  --hol-bg: #fee2e2;   --hol-line: #fecaca;   /* resmi tatil */
+  --half:      #b45309;  --half-bg: #fef3c7;  --half-line: #fde68a;  /* arife / yarıma */
+  --amber:     #f59e0b;  --amber-line: #fde68a;                      /* otel / uyarı */
+  --teal:      #0d9488;  --teal-bg: #ccfbf1;  --teal-line: #99f6e4;  /* gezi / dönüş */
+
+  /* Nötrler */
+  --bg:        #f5f6fa;
+  --card:      #ffffff;
+  --ink:       #1e2233;
+  --muted:     #6b7280;
+  --text-soft: #4b5563;   /* kart içi koyu ikincil metin */
+  --line:      #e5e7eb;
+  --soft:      #f8fafc;   /* hover zemini */
+  --weekend-bg:#eef1f6;
+  --slate-400: #94a3b8;
+  --slate-600: #64748b;
+
+  /* Ölçek: yarıçap */
+  --radius-sm:   9px;
+  --radius:      14px;
+  --radius-lg:   18px;
+  --radius-full: 999px;
+
+  /* Ölçek: gölge */
+  --shadow-sm: 0 1px 3px rgba(16, 24, 40, .07);
+  --shadow-md: 0 1px 3px rgba(16, 24, 40, .07), 0 8px 24px -18px rgba(16, 24, 40, .25);
+  --shadow-brand: 0 6px 18px -8px rgba(99, 102, 241, .55);
+  --shadow-topbar: 0 14px 34px -20px rgba(49, 46, 129, .6);
+
+  /* Hareket */
+  --dur: .18s;
+  --ease: cubic-bezier(.2, .7, .3, 1);
 }
 
+/* ---------- 2. TEMEL KALIP ---------- */
 * { box-sizing: border-box; }
 
 body {
@@ -30,65 +78,151 @@ h3 { margin: 0 0 10px; font-size: 1rem; }
 p { margin: 6px 0; }
 .muted { color: var(--muted); font-size: 0.85rem; margin: 2px 0 0; }
 
-/* ---------- Topbar ---------- */
+/* Klavye odak halkası (tüm interactive elemanlarda ortak) */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--brand-500);
+  outline-offset: 2px;
+}
+
+/* ---------- 3. TOPBAR (marka + navigasyon) ---------- */
 .topbar {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 14px 26px;
-  background: linear-gradient(120deg, #1e1b4b 0%, #312e81 55%, #3b82f6 140%);
-  color: #fff;
+  gap: 20px 22px;
   flex-wrap: wrap;
+  padding: 16px 28px 15px;
+  color: #fff;
+  overflow: hidden;                       /* dekoratif katmanları kes */
+  background:
+    radial-gradient(1100px 480px at 88% -60%, rgba(59, 130, 246, .40), transparent 62%),
+    radial-gradient(760px 360px at -8% 140%, rgba(13, 148, 136, .28), transparent 55%),
+    linear-gradient(115deg, var(--brand-900) 0%, var(--brand-700) 52%, #1d4ed8 150%);
+  box-shadow: var(--shadow-topbar);
+  border-bottom: 1px solid rgba(255, 255, 255, .09);
 }
-.brand { display: flex; align-items: center; gap: 12px; }
-.brand-logo {
-  font-size: 1.9rem;
-  background: rgba(255,255,255,.14);
-  border-radius: 12px;
-  padding: 6px 10px;
+/* Üstte ince cam parlaklık katmanı */
+.topbar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .08), transparent 34%);
+  pointer-events: none;
 }
-.brand .muted { color: rgba(255,255,255,.75); }
 
-.tabs {
+.brand {
+  position: relative;
   display: flex;
-  gap: 6px;
-  background: rgba(255,255,255,.12);
-  border-radius: 999px;
+  align-items: center;
+  gap: 14px;
+}
+.brand-logo {
+  font-size: 1.65rem;
+  line-height: 1;
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, rgba(255, 255, 255, .28), rgba(255, 255, 255, .06));
+  border: 1px solid rgba(255, 255, 255, .25);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 10px 22px -12px rgba(0, 0, 0, .55);
+  backdrop-filter: blur(4px);
+}
+.brand h1 {
+  font-size: 1.38rem;
+  font-weight: 800;
+  letter-spacing: .01em;
+  background: linear-gradient(92deg, #fff 42%, var(--brand-300));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.brand .muted {
+  margin-top: 3px;
+  color: rgba(255, 255, 255, .62);
+  font-size: 0.66rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+/* Logo aria karakteri: hafif onay işareti gibi sallaşma */
+.brand-logo { transition: transform var(--dur) var(--ease); }
+.brand:hover .brand-logo { transform: rotate(-6deg) scale(1.05); }
+
+/* --- Sekmeler (kapsül) --- */
+.tabs {
+  position: relative;
+  display: flex;
+  gap: 4px;
   padding: 5px;
   margin: 0 auto;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, .10);
+  border: 1px solid rgba(255, 255, 255, .14);
+  backdrop-filter: blur(6px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12);
 }
 .tab {
   border: 0;
   background: transparent;
-  color: rgba(255,255,255,.85);
+  color: rgba(255, 255, 255, .82);
   padding: 8px 18px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 0.92rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: background .15s;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease),
+              box-shadow var(--dur) var(--ease);
 }
-.tab:hover { background: rgba(255,255,255,.12); }
-.tab.active { background: #fff; color: #1e2233; font-weight: 600; }
+.tab:hover { background: rgba(255, 255, 255, .12); color: #fff; }
+.tab.active {
+  background: #fff;
+  color: var(--ink);
+  font-weight: 700;
+  box-shadow: 0 4px 12px -6px rgba(0, 0, 0, .45), inset 0 0 0 1px rgba(49, 46, 129, .08);
+}
 
-.top-actions { margin-left: auto; }
+.top-actions { position: relative; }
+.btn.ghost {
+  background: rgba(255, 255, 255, .12);
+  border-color: rgba(255, 255, 255, .28);
+  color: #fff;
+  backdrop-filter: blur(4px);
+  border-radius: var(--radius-full);
+}
+.btn.ghost:hover { background: rgba(255, 255, 255, .22); }
 
-/* ---------- Buttons & forms ---------- */
+/* ---------- 4. DÜĞMELER & FORMLAR ---------- */
 .btn {
   border: 1px solid var(--line);
-  background: #fff;
+  background: var(--card);
   color: var(--ink);
   border-radius: 10px;
   padding: 8px 14px;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: filter .15s, box-shadow .15s;
+  transition: filter var(--dur) var(--ease), box-shadow var(--dur) var(--ease),
+              transform var(--dur) var(--ease);
 }
-.btn:hover { filter: brightness(0.97); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.btn.danger { color: #b91c1c; border-color: #fecaca; }
-.btn.ghost { background: rgba(255,255,255,.14); border-color: rgba(255,255,255,.25); color: #fff; }
-.btn.ghost:hover { background: rgba(255,255,255,.22); }
-.btn.small { padding: 4px 10px; font-size: 0.85rem; }
+.btn:hover {
+  filter: brightness(0.97);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+.btn:active { transform: none; }
+.btn.primary {
+  background: linear-gradient(135deg, var(--brand-500), #7c3aed 130%);
+  border-color: var(--brand-500);
+  color: #fff;
+  box-shadow: var(--shadow-brand);
+}
+.btn.primary:hover { filter: brightness(1.06); }
+.btn.danger { color: #b91c1c; border-color: var(--hol-line); }
+.btn.small { padding: 4px 10px; font-size: 0.85rem; border-radius: 8px; }
 .btn.tiny { padding: 2px 8px; font-size: 0.78rem; border-radius: 8px; }
 
 form.card label {
@@ -104,21 +238,22 @@ input, select, textarea {
   font-size: 0.9rem;
   padding: 8px 10px;
   border: 1px solid var(--line);
-  border-radius: 9px;
-  background: #fff;
+  border-radius: var(--radius-sm);
+  background: var(--card);
   color: var(--ink);
   width: 100%;
 }
 input:focus, select:focus, textarea:focus {
-  outline: 2px solid rgba(99,102,241,.35);
-  border-color: var(--accent);
+  outline: none;
+  border-color: var(--brand-500);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
-/* ---------- Layout helpers ---------- */
+/* ---------- 5. YERLEŞİM YARDIMCILARI ---------- */
 main { max-width: 1180px; margin: 0 auto; padding: 22px 26px 60px; }
 .tab-panel { display: none; }
-.tab-panel.active { display: block; animation: fade .18s ease; }
-@keyframes fade { from { opacity: 0; transform: translateY(4px);} to { opacity: 1; transform: none;} }
+.tab-panel.active { display: block; animation: fade var(--dur) var(--ease); }
+@keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
 .row-between {
   display: flex;
@@ -128,7 +263,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px 26px 60px; }
   gap: 10px;
 }
 
-/* ---------- Hero cards ---------- */
+/* ---------- 6. HERO KARTLAR ---------- */
 .hero-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -138,7 +273,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px 26px 60px; }
   background: var(--card);
   border-radius: var(--radius);
   padding: 18px 20px;
-  box-shadow: 0 1px 3px rgba(16,24,40,.07), 0 8px 24px -18px rgba(16,24,40,.25);
+  box-shadow: var(--shadow-md);
 }
 .hero-card .kicker {
   font-size: 0.75rem;
@@ -150,10 +285,10 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px 26px 60px; }
 .hero-card .big { font-size: 2.1rem; font-weight: 800; line-height: 1.1; }
 .hero-card.teal { border-left: 5px solid var(--teal); }
 .hero-card.red { border-left: 5px solid var(--hol); }
-.hero-card.indigo { border-left: 5px solid var(--accent); }
+.hero-card.indigo { border-left: 5px solid var(--brand-500); }
 .hero-card .name { font-weight: 700; margin: 2px 0; }
 
-/* ---------- Legend & chips ---------- */
+/* ---------- 7. LEGEND & ÇİPLER ---------- */
 .legend { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0; }
 .chip {
   display: inline-flex;
@@ -163,17 +298,16 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px 26px 60px; }
   color: var(--muted);
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 5px 12px;
 }
 .dot { width: 11px; height: 11px; border-radius: 4px; display: inline-block; }
 .dot.hol { background: var(--hol); }
-.dot.half { background: #f59e0b; }
+.dot.half { background: var(--amber); }
 .dot.we { background: #cbd5e1; }
 .dot.trip { background: var(--teal); }
-.dot.trip-range { border: 2px dashed rgba(13, 148, 136, .5); width: 10px; height: 10px; }
-
-/* ---------- Months grid ---------- */
+.dot.trip-range { border: 2px dashed var(--teal); opacity: .55; width: 10px; height: 10px; }
+/* ---------- 8. AY GRİDİ (mini takvim) ---------- */
 .months-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -183,7 +317,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px 26px 60px; }
   background: var(--card);
   border-radius: var(--radius);
   padding: 14px 16px 16px;
-  box-shadow: 0 1px 3px rgba(16,24,40,.07);
+  box-shadow: var(--shadow-sm);
 }
 .month-card h3 {
   font-size: 0.95rem;
@@ -211,15 +345,15 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px 26px 60px; }
   line-height: 1;
 }
 .day-cell .marker { font-size: 0.62rem; line-height: 1.2; }
-.day-cell.we { background: var(--weekend-bg); color: #64748b; }
+.day-cell.we { background: var(--weekend-bg); color: var(--slate-600); }
 .day-cell.hol { background: var(--hol-bg); color: var(--hol); font-weight: 700; }
-.day-cell.half { background: #fef3c7; color: var(--half); }
+.day-cell.half { background: var(--half-bg); color: var(--half); }
 .day-cell.trip { box-shadow: inset 0 0 0 2px var(--teal); }
 .day-cell.trip-range { outline: 2px dashed rgba(13, 148, 136, .5); outline-offset: -2px; }
-.day-cell.today { outline: 2px solid var(--accent); outline-offset: -2px; font-weight: 800; }
+.day-cell.today { outline: 2px solid var(--brand-500); outline-offset: -2px; font-weight: 800; }
 .day-cell.empty { visibility: hidden; }
 
-/* ---------- Holiday list ---------- */
+/* ---------- 9. TATİL LİSTESİ ---------- */
 .holiday-list { display: flex; flex-direction: column; gap: 10px; }
 .hol-item {
   display: flex;
@@ -229,7 +363,9 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px 26px 60px; }
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 12px 18px;
+  transition: box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
 }
+.hol-item:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
 .hol-date {
   min-width: 86px;
   text-align: center;
@@ -238,7 +374,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px 26px 60px; }
   border-radius: 10px;
   padding: 8px 6px;
 }
-.hol-date.half-style { background: #fef3c7; color: var(--half); }
+.hol-date.half-style { background: var(--half-bg); color: var(--half); }
 .hol-date .day-num { font-size: 1.3rem; font-weight: 800; line-height: 1.1; }
 .hol-date .mon { font-size: 0.72rem; text-transform: uppercase; }
 .hol-item .info { flex: 1; min-width: 200px; }
@@ -247,26 +383,36 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px 26px 60px; }
 .badge {
   font-size: 0.74rem;
   padding: 3px 9px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   border: 1px solid var(--line);
   color: var(--muted);
   white-space: nowrap;
 }
-.badge.hol { background: var(--hol-bg); color: var(--hol); border-color: #fecaca; }
-.badge.half { background: #fef3c7; color: var(--half); border-color: #fde68a; }
-.badge.block { background: var(--teal-bg); color: var(--teal); border-color: #99f6e4; }
+.badge.hol { background: var(--hol-bg); color: var(--hol); border-color: var(--hol-line); }
+.badge.half { background: var(--half-bg); color: var(--half); border-color: var(--half-line); }
+.badge.block { background: var(--teal-bg); color: var(--teal); border-color: var(--teal-line); }
 
-/* ---------- Trip view ---------- */
+/* ---------- 10. GEZİ GÖRÜNÜMÜ ---------- */
 .trip-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
 .trip-chip {
   border: 1px solid var(--line);
-  background: #fff;
-  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  border-radius: var(--radius-full);
   padding: 6px 14px;
   font-size: 0.88rem;
   cursor: pointer;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease),
+              box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
 }
-.trip-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+.trip-chip:hover { box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+.trip-chip.active {
+  background: linear-gradient(135deg, var(--brand-500), #7c3aed 130%);
+  color: #fff;
+  border-color: var(--brand-500);
+  font-weight: 600;
+  box-shadow: var(--shadow-brand);
+}
 
 .trip-head {
   display: flex;
@@ -277,7 +423,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px 26px 60px; }
   background: var(--card);
   border-radius: var(--radius);
   padding: 18px 20px;
-  box-shadow: 0 1px 3px rgba(16,24,40,.07);
+  box-shadow: var(--shadow-sm);
   margin-bottom: 18px;
 }
 .trip-head .title { font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
@@ -307,8 +453,10 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px 26px 60px; }
   border-left-width: 4px;
   border-radius: var(--radius);
   padding: 12px 16px;
+  transition: box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
 }
-.f-card.out { border-left-color: #3b82f6; }
+.f-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.f-card.out { border-left-color: var(--sky-500); }
 .f-card.return { border-left-color: var(--teal); }
 .f-dir { text-align: center; }
 .f-dir .emoji { font-size: 1.5rem; }
@@ -324,15 +472,17 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px 26px 60px; }
   align-items: flex-start;
   background: var(--card);
   border: 1px solid var(--line);
-  border-left: 4px solid #f59e0b;
+  border-left: 4px solid var(--amber);
   border-radius: var(--radius);
   padding: 12px 16px;
+  transition: box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
 }
+.h-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
 .h-card .h-emoji { font-size: 1.6rem; }
 .h-card .info { flex: 1; min-width: 0; }
 .h-card .name { font-weight: 700; }
 .h-card .dates { font-size: 0.83rem; color: var(--muted); margin-top: 2px; }
-.h-card .note { font-size: 0.82rem; margin-top: 4px; color: #4b5563; }
+.h-card .note { font-size: 0.82rem; margin-top: 4px; color: var(--text-soft); }
 .h-card h4 { margin: 0; font-size: 1rem; }
 
 .empty-note {
@@ -344,7 +494,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px 26px 60px; }
   font-size: 0.9rem;
 }
 
-/* ---------- Gün gün program ---------- */
+/* ---------- 11. GÜN GÜN PROGRAM ---------- */
 .it-list { display: flex; flex-direction: column; gap: 10px; }
 .it-card {
   display: flex;
@@ -355,7 +505,9 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px 26px 60px; }
   border-left: 4px solid var(--teal);
   border-radius: var(--radius);
   padding: 12px 16px;
+  transition: box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
 }
+.it-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
 .it-card .it-date {
   min-width: 78px;
   text-align: center;
@@ -366,10 +518,10 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px 26px 60px; }
 }
 .it-card .it-date .d { font-size: 1.3rem; font-weight: 800; line-height: 1.1; }
 .it-card .it-date .m { font-size: 0.72rem; text-transform: uppercase; }
-.it-card .it-date .w { font-size: 0.68rem; color: #64748b; margin-top: 2px; text-transform: uppercase; }
+.it-card .it-date .w { font-size: 0.68rem; color: var(--slate-600); margin-top: 2px; text-transform: uppercase; }
 .it-card .it-info { flex: 1; min-width: 0; padding-top: 2px; }
 .it-card .it-info b { font-weight: 700; display: block; margin-bottom: 2px; }
-.it-card .it-line { font-size: 0.85rem; color: #4b5563; margin-top: 3px; }
+.it-card .it-line { font-size: 0.85rem; color: var(--text-soft); margin-top: 3px; }
 
 .form-grid {
   display: grid;
@@ -379,7 +531,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px 26px 60px; }
 }
 .form-actions { display: flex; gap: 8px; margin-top: 10px; }
 
-/* ---------- Map ---------- */
+/* ---------- 12. HARİTA ---------- */
 .map-layout {
   display: grid;
   grid-template-columns: 1fr 300px;
@@ -390,8 +542,8 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px 26px 60px; }
   height: 640px;
   border-radius: var(--radius);
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(16,24,40,.1);
-  background: #dbeafe;
+  box-shadow: var(--shadow-sm);
+  background: var(--sky-100);
 }
 .map-side {
   background: var(--card);
@@ -402,6 +554,17 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px 26px 60px; }
   max-height: 640px;
 }
 .map-side h3 { font-size: 0.9rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.map-side h3, .map-side .m-trip h3 { margin-bottom: 4px; }
+/* gezi grubu başlığı: indigo (marka) + grubun alt bölümleri nötr */
+.map-side .m-trip h3 { font-size: 0.95rem; color: var(--brand-500); text-transform: none; letter-spacing: 0; margin-top: 4px; }
+.m-trip + .m-trip { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 12px; }
+.map-side h4 {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--muted);
+  margin: 10px 0 4px;
+}
 .map-side ul { list-style: none; padding: 0; margin: 0 0 16px; }
 .map-side li {
   display: flex;
@@ -410,8 +573,9 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px 26px 60px; }
   padding: 6px 0;
   border-bottom: 1px solid var(--line);
   font-size: 0.88rem;
+  transition: background var(--dur) var(--ease);
 }
-.map-side li:hover { cursor: pointer; background: #f8fafc; }
+.map-side li:hover { cursor: pointer; background: var(--soft); }
 .map-side li .m-emoji { width: 20px; text-align: center; }
 .map-side li small { color: var(--muted); }
 
@@ -423,12 +587,12 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px 26px 60px; }
   font-size: 18px;
   border-radius: 50%;
   background: #fff;
-  border: 2px solid #1e293b;
-  box-shadow: 0 1px 4px rgba(0,0,0,.25);
+  border: 2px solid #1e293b;   /* haritanın üstünde nötr kontrast */
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .25);
   font-weight: 800;
 }
 .poi-icon { width: 28px; height: 28px; }
-.hotel-icon { width: 26px; height: 26px; border-color: #f59e0b; }
+.hotel-icon { width: 26px; height: 26px; border-color: var(--amber); }
 
 footer {
   text-align: center;
@@ -439,12 +603,21 @@ footer {
   margin-top: 30px;
 }
 
-/* ---------- Responsive ---------- */
+/* ---------- 13. HAREKET TERCİHLERİ ---------- */
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+/* ---------- 14. RESPONSIVE ---------- */
 @media (max-width: 720px) {
+  .topbar { padding: 14px 16px; gap: 12px 16px; }
+  .brand-logo { width: 46px; height: 46px; font-size: 1.4rem; }
+  .tabs { order: 3; width: 100%; justify-content: center; }
   .map-layout { grid-template-columns: 1fr; }
   #mapDiv { height: 380px; }
   .map-side { max-height: none; }
   .f-card { grid-template-columns: 70px 1fr; }
   .f-actions { grid-column: 1 / -1; }
   .top-actions { margin-left: 0; width: 100%; }
+  .top-actions .btn { width: 100%; }
 }
