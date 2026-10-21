@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tatil Takvimi</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-logo">🌴</span>
+      <div>
+        <h1>Tatil Takvimi</h1>
+        <p class="muted">Resmi tatiller · Geziler · Oteller · Harita</p>
+      </div>
+    </div>
+    <nav class="tabs" id="tabs" role="tablist">
+      <button class="tab active" data-tab="takvim">📅 Takvim</button>
+      <button class="tab" data-tab="gezi">🧳 Gezi</button>
+      <button class="tab" data-tab="harita">🗺️ Harita</button>
+    </nav>
+    <div class="top-actions">
+      <button id="icsBtn" class="btn ghost" title="Tüm tatil ve gezi etkinliklerini .ics olarak indir">⬇️ Takvimi indir (.ics)</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- ================= TAKVİM ================= -->
+    <section id="tab-takvim" class="tab-panel active">
+      <div class="hero-grid" id="heroGrid"></div>
+
+      <div class="row-between">
+        <h2>Yıllık Takvim</h2>
+        <div class="year-switch">
+          <button id="prevYear" class="btn small" aria-label="Önceki yıl">‹</button>
+          <span id="yearLabel" class="year-label">2026</span>
+          <button id="nextYear" class="btn small" aria-label="Sonraki yıl">›</button>
+        </div>
+      </div>
+
+      <div class="legend">
+        <span class="chip hol-chip"><i class="dot hol"></i> Resmi tatil</span>
+        <span class="chip half-chip"><i class="dot half"></i> Arife (yarım gün)</span>
+        <span class="chip we-chip"><i class="dot we"></i> Hafta sonu</span>
+        <span class="chip trip-chip"><i class="dot trip"></i> ✈/🚆/🏨 Gezi günü</span>
+        <span class="chip trip-chip"><i class="dot trip-range"></i> Gezi aralığı</span>
+      </div>
+
+      <div id="monthsGrid" class="months-grid"></div>
+
+      <h2>Resmi Tatiller</h2>
+      <div id="holidayList" class="holiday-list"></div>
+    </section>
+
+    <!-- ================= GEZİ ================= -->
+    <section id="tab-gezi" class="tab-panel">
+      <div id="tripMain"></div>
+    </section>
+
+    <!-- ================= HARİTA ================= -->
+    <section id="tab-harita" class="tab-panel">
+      <div class="map-layout">
+        <div id="mapDiv"></div>
+        <aside id="mapSide" class="map-side"></aside>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Dini bayram tarihleri Diyanet İşleri Başkanlığı resmi takvimine göre yer alır (2026–2027).</p>
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/holidays.js"></script>
+  <script src="js/trips.js"></script>
+  <script src="js/calendar.js"></script>
+</body>
+</html>
