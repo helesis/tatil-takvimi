@@ -73,7 +73,8 @@ const PLACES = {
   IST: { name: "İstanbul Havalimanı", emoji: "🛫", mode: "fly", lat: 41.2619, lng: 28.7419 },
   HAN: { name: "Hanoi Noi Bai Havalimanı", emoji: "🛬", mode: "fly", lat: 21.2212, lng: 105.8072 },
   DAD: { name: "Da Nang Havalimanı", emoji: "🛬", mode: "fly", lat: 16.0439, lng: 108.1993 },
-  CAN: { name: "Çanakkale (Hotel Caeli bölgesi)", emoji: "🚗", mode: "car", lat: 40.1470, lng: 26.4131 }
+  CAN: { name: "Çanakkale (Hotel Caeli bölgesi)", emoji: "🚗", mode: "car", lat: 40.1470, lng: 26.4131 },
+  LAX: { name: "Los Angeles Uluslararası Havalimanı", emoji: "🛬", mode: "fly", lat: 33.9416, lng: -118.4085 }
 };
 
 /* Otel listesinde şehir yazıldığında koordinat bulunmak için merkezler */
@@ -92,7 +93,8 @@ const CITY_CENTERS = [
   { name: "Da Nang", lat: 16.0544, lng: 108.2022 },
   { name: "Ha Long", lat: 20.9101, lng: 107.1839 },
   { name: "Hoi An", lat: 15.8801, lng: 108.3380 },
-  { name: "Çanakkale", lat: 40.1470, lng: 26.4131 }
+  { name: "Çanakkale", lat: 40.1470, lng: 26.4131 },
+  { name: "Los Angeles", lat: 34.0522, lng: -118.2437 }
 ];
 
 /* ============ Ortak yardımcılar ============ */
