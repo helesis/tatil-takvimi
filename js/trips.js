@@ -5,10 +5,11 @@
    - Vietnam: 29 Kas – 6 Ara 2026 (AYT–IST–HAN, HAN–DAD–HAN, HAN–IST–AYT)
    - Mısır: 13-19 Aralık 2026, Kahire & Şarm El Şeyh (XQ224 gidiş / PC5089 dönüş)
    - Çanakkale: 27-29 Aralık 2026, Hotel Caeli & Caeli Winery (araç yolculuğu)
+   - Los Angeles: 27 Oca – 3 Şub 2027, THY TK2445/TK179 gidiş, TK10/TK2430 dönüş (VANWNF)
    ============================================================ */
 
 const TT = (() => {
-  const LS_KEY = "tatilTakvimi.trips.v12";
+  const LS_KEY = "tatilTakvimi.trips.v13";
 
   const DEFAULT_TRIPS = [
     {
@@ -172,6 +173,57 @@ const TT = (() => {
         }
       ],
       itinerary: []
+    },
+    {
+      id: "los-angeles-2027",
+      name: "Los Angeles",
+      emoji: "🇺🇸",
+      startDate: "2027-01-27",
+      endDate: "2027-02-03",
+      flights: [
+        {
+          id: "la-out-1", dir: "out", mode: "fly", date: "2027-01-27",
+          from: "AYT", to: "IST", time: "04:25", timeArr: "05:55", no: "TK2445",
+          note: "THY · B737 · aktarma ve uçak değişikliği · rezervasyon VANWNF"
+        },
+        {
+          id: "la-out-2", dir: "out", mode: "fly", date: "2027-01-27",
+          from: "IST", to: "LAX", time: "08:00", timeArr: "10:50", no: "TK179",
+          note: "THY · B787-9 · 13s 50dk · LA yerel saatiyle varış"
+        },
+        {
+          id: "la-ret-1", dir: "return", mode: "fly", date: "2027-02-03",
+          from: "LAX", to: "IST", time: "18:30", timeArr: "18:55", no: "TK10",
+          note: "THY · B777 · 13s 25dk · varış +1 gün (4 Şub)"
+        },
+        {
+          id: "la-ret-2", dir: "return", mode: "fly", date: "2027-02-03",
+          from: "IST", to: "AYT", time: "20:10", timeArr: "21:35", no: "TK2430",
+          note: "THY · B777 · varış +1 gün (4 Şub)"
+        }
+      ],
+      hotels: [],
+      itinerary: [
+        {
+          date: "2027-01-27",
+          title: "Antalya → Los Angeles",
+          lines: [
+            "04:25 Antalya → İstanbul uçuşu (TK2445)",
+            "08:00 İstanbul → Los Angeles uçuşu (TK179)",
+            "10:50 Los Angeles varış (yerel saat)"
+          ]
+        },
+        {
+          date: "2027-02-03",
+          title: "Los Angeles → Antalya",
+          lines: [
+            "18:30 Los Angeles → İstanbul uçuşu (TK10)",
+            "18:55 İstanbul varış (+1 gün, 4 Şub)",
+            "20:10 İstanbul → Antalya uçuşu (TK2430)",
+            "21:35 Antalya varış"
+          ]
+        }
+      ]
     }
   ];
 
