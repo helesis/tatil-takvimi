@@ -414,6 +414,39 @@
     return el;
   }
 
+  /* Büyük daire (great circle) rotası: kürenin iki noktası arasındaki en kısa yol —
+     uçakların gerçekten izlediği rota. Slerp ile ara noktalar üretilir; 180° meridyen
+     geçişlerinde boylam sürekliliği korunur. */
+  function gcPoints(p1, p2, n = 96) {
+    const RAD = Math.PI / 180, DEG = 180 / Math.PI;
+    const [lon1, lat1] = p1, [lon2, lat2] = p2;
+    const f1 = lat1 * RAD, l1 = lon1 * RAD, f2 = lat2 * RAD, l2 = lon2 * RAD;
+    const x1 = Math.cos(f1) * Math.cos(l1), y1 = Math.cos(f1) * Math.sin(l1), z1 = Math.sin(f1);
+    const x2 = Math.cos(f2) * Math.cos(l2), y2 = Math.cos(f2) * Math.sin(l2), z2 = Math.sin(f2);
+    const dot = Math.min(1, Math.max(-1, x1 * x2 + y1 * y2 + z1 * z2));
+    const omega = Math.acos(dot);
+    const pts = [];
+    for (let i = 0; i <= n; i++) {
+      const t = i / n;
+      let x, y, z;
+      if (omega < 1e-9) { x = x1; y = y1; z = z1; }
+      else {
+        const s1 = Math.sin((1 - t) * omega) / Math.sin(omega);
+        const s2 = Math.sin(t * omega) / Math.sin(omega);
+        x = s1 * x1 + s2 * x2; y = s1 * y1 + s2 * y2; z = s1 * z1 + s2 * z2;
+      }
+      const lat = Math.atan2(z, Math.hypot(x, y)) * DEG;
+      let lon = Math.atan2(y, x) * DEG;
+      if (pts.length) {
+        const prev = pts[pts.length - 1][0];
+        while (lon - prev > 180) lon -= 360;
+        while (lon - prev < -180) lon += 360;
+      }
+      pts.push([lon, lat]);
+    }
+    return pts;
+  }
+
   function popupHtml(kind, lines) {
     return new maplibregl.Popup({ offset: 26, closeButton: true })
       .setHTML(`<div class="tt-popup">${lines.map(l => `<div>${l}</div>`).join("")}</div>`);
@@ -456,8 +489,12 @@
         const color = isCar ? "#8b5cf6" : isTrain ? "#f59e0b" : (f.dir === "out" ? "#2563eb" : "#0d9488");
         routeFeatures.push({
           type: "Feature",
-          properties: { kind, color, popup: `<div class="tt-popup"><div><b>${tLabel}</b></div><div>${isCar ? "🚗 Araç" : isTrain ? "🚆 Tren" : (f.dir === "out" ? "🛫 Gidiş" : "🛬 Dönüş")}: <b>${f.from} → ${f.to}</b></div><small>${longDate(f.date)}${f.time ? ` · Saat ${f.time}${f.timeArr ? " → " + f.timeArr : ""}` : ""} · ≈${dist} km</small></div>` },
-          geometry: { type: "LineString", coordinates: [fromPt, toPt] }
+          properties: { kind, color, popup: `<div class="tt-popup"><div><b>${tLabel}</b></div><div>${isCar ? "🚗 Araç" : isTrain ? "🚆 Tren" : (f.dir === "out" ? "🛫 Gidiş" : "🛬 Dönüş")}: <b>${f.from} → ${f.to}</b></div><small>${longDate(f.date)}${f.time ? ` · Saat ${f.time}${f.timeArr ? " → " + f.timeArr : ""}` : ""} · ≈${dist} km${!isTrain && !isCar ? " · büyük daire rotası" : ""}</small></div>` },
+          /* uçak: gerçek uçuş rotası (büyük daire) — tren/araç: düz güzergâh */
+          geometry: {
+            type: "LineString",
+            coordinates: (isTrain || isCar) ? [fromPt, toPt] : gcPoints(fromPt, toPt, 96)
+          }
         });
       });
 
