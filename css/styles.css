@@ -460,6 +460,17 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px 26px 60px; }
 .f-card.return { border-left-color: var(--teal); }
 .f-dir { text-align: center; }
 .f-dir .emoji { font-size: 1.5rem; }
+.f-dir .f-logo {
+  display: block;
+  margin: 6px auto 4px;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #fff;
+  padding: 3px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .15);
+}
 .f-dir .dir-lbl { font-size: 0.72rem; text-transform: uppercase; color: var(--muted); letter-spacing: .06em; }
 .f-route .route-line { font-size: 1.15rem; font-weight: 800; }
 .f-route .route-line .arrow { color: var(--muted); padding: 0 6px; }
