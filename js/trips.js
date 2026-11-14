@@ -523,6 +523,26 @@ const TT = (() => {
     `;
   }
 
+  /* Havayolu logoları: uçuş no ön eki veya nottan şirket tespiti (Kiwi.com logo CDN) */
+  const AIRLINE_LOGOS = {
+    TK: "Turkish Airlines",
+    XQ: "SunExpress",
+    PC: "Pegasus",
+    "9G": "Sun PhuQuoc Airways"
+  };
+
+  function airlineCodeOf(f) {
+    if (f.mode !== "fly") return null;
+    const m = (f.no || "").match(/^([A-Z0-9]{2})/);
+    if (m && AIRLINE_LOGOS[m[1]]) return m[1];
+    const note = (f.note || "").toLowerCase();
+    if (/turkish|thy/.test(note)) return "TK";
+    if (/sunexpress/.test(note)) return "XQ";
+    if (/pegasus/.test(note)) return "PC";
+    if (/sun phuquoc/.test(note)) return "9G";
+    return null;
+  }
+
   function flightCardHtml(f) {
     const from = PLACES[f.from] || { name: f.from };
     const to = PLACES[f.to] || { name: f.to };
@@ -536,16 +556,21 @@ const TT = (() => {
     const timeTxt = f.time
       ? (f.timeArr ? `Saat ${esc(f.time)} → ${esc(f.timeArr)}` : `Saat ${esc(f.time)}`)
       : "";
+    const airCode = airlineCodeOf(f);
+    const logoHtml = airCode
+      ? `<img class="f-logo" src="https://images.kiwi.com/airlines/32/${airCode}.png" alt="${esc(AIRLINE_LOGOS[airCode])}" title="${esc(AIRLINE_LOGOS[airCode])}" decoding="async" onerror="this.style.display='none'" />`
+      : "";
     return `
       <div class="f-card ${isCar ? "car" : isTrain ? "leg" : (f.dir === "out" ? "out" : "return")}">
         <div class="f-dir">
           <div class="emoji">${emoji}</div>
+          ${logoHtml}
           <div class="dir-lbl">${dirLbl}</div>
         </div>
         <div class="f-route">
           <div class="route-line">${esc(f.from)}<span class="arrow">→</span>${esc(f.to)}</div>
           <div class="meta">${esc(from.name)} → ${esc(to.name)}${dist}</div>
-          <div class="meta">${longDate(f.date)}${timeTxt ? ` · ${timeTxt}` : ""}${f.no ? ` · ${esc(f.no)}` : ""}</div>
+          <div class="meta">${longDate(f.date)}${timeTxt ? ` · ${timeTxt}` : ""}${f.no ? ` · ${esc(f.no)}` : ""}${airCode ? ` · ${esc(AIRLINE_LOGOS[airCode])}` : ""}</div>
           ${f.note ? `<div class="meta">📝 ${esc(f.note)}</div>` : ""}
         </div>
         <div class="f-actions">
