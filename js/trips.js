@@ -9,7 +9,7 @@
    ============================================================ */
 
 const TT = (() => {
-  const LS_KEY = "tatilTakvimi.trips.v13";
+  const LS_KEY = "tatilTakvimi.trips.v14";
 
   const DEFAULT_TRIPS = [
     {
@@ -145,7 +145,13 @@ const TT = (() => {
         { id: "fly-out-1", dir: "out", mode: "fly", date: "2026-12-13", from: "AYT", to: "CAI", time: "20:30", timeArr: "21:20", no: "XQ224", note: "SunExpress · rezervasyon SC44P8" },
         { id: "fly-ret-1", dir: "return", mode: "fly", date: "2026-12-19", from: "SSH", to: "AYT", time: "02:15", timeArr: "05:10", no: "PC5089", note: "Pegasus · rezervasyon 2HZ1MU" }
       ],
-      hotels: []
+      hotels: [
+        {
+          id: "eg-hotel-cairo", name: "Sofitel Cairo Nile El Gezirah", city: "Kahire", area: "Nil / Gezira Adası",
+          checkIn: "2026-12-13", checkOut: "2026-12-15", price: "", link: "",
+          note: "5★ · giriş 15:00, çıkış 12:00 · program no: 72081155966960", coords: ""
+        }
+      ]
     },
     {
       id: "caeli-canakkale-2026",
