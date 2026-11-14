@@ -633,14 +633,31 @@ const TT = (() => {
     return t?.flights?.find(f => f.id === fid) || null;
   }
 
+  /* Otel marka logoları: Wikimedia Commons hotlink (SVG raster servis) */
+  const HOTEL_BRANDS = [
+    { test: /maritim/i, name: "Maritim Hotels", url: "https://commons.wikimedia.org/wiki/Special:FilePath/Maritim_Hotelgesellschaft_logo.svg?width=48" },
+    { test: /leonardo/i, name: "Leonardo Hotels", url: "https://commons.wikimedia.org/wiki/Special:FilePath/Leonardo_Hotels_Logo.png?width=48" },
+    { test: /sofitel/i, name: "Sofitel", url: "https://commons.wikimedia.org/wiki/Special:FilePath/Sofitel_logo.svg?width=48" }
+  ];
+
+  function hotelBrandOf(h) {
+    if (h.brand) return HOTEL_BRANDS.find(b => b.name === h.brand) || null;
+    const kaynak = `${h.name} ${h.city || ""}`;
+    return HOTEL_BRANDS.find(b => b.test.test(kaynak)) || null;
+  }
+
   function hotelCardHtml(h) {
     const nights = h.checkIn && h.checkOut ? dayDiff(h.checkIn, h.checkOut) : null;
     const marked = hotelCoords(h) ? "Konum haritada işaretli 🗺️" : "Konum girilmedi (haritada şehir merkezine yakınsız)";
+    const brand = hotelBrandOf(h);
+    const badge = brand
+      ? `<img class="h-logo" src="${brand.url}" alt="${esc(brand.name)}" title="${esc(brand.name)}" decoding="async" onerror="this.closest('.h-emoji').textContent='🏨'" />`
+      : "🏨";
     return `
       <div class="h-card">
-        <div class="h-emoji">🏨</div>
+        <div class="h-emoji">${badge}</div>
         <div class="info">
-          <h4>${esc(h.name)} ${h.link ? `<a href="${esc(h.link)}" target="_blank" rel="noopener" title="Otel linkini aç">🔗</a>` : ""}</h4>
+          <h4>${esc(h.name)} ${brand ? `<small class="brand-tag">${esc(brand.name)}</small>` : ""} ${h.link ? `<a href="${esc(h.link)}" target="_blank" rel="noopener" title="Otel linkini aç">🔗</a>` : ""}</h4>
           <div class="dates">
             ${esc(h.city)}${h.area ? ` · ${esc(h.area)}` : ""}
             ${h.checkIn ? ` · Giriş: ${longDate(h.checkIn).split(",")[0]}` : ""}
