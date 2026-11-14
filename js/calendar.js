@@ -6,8 +6,10 @@
 (() => {
   /* ---------- durum ---------- */
   let currentYear = new Date().getFullYear();
-  let map = null;           // Leaflet instance
-  let markerLayer = null;   // layerGroup
+  let map = null;            // MapLibre GL instance
+  let mapReady = false;      // stil yüklendi mi
+  let markers = [];          // maplibregl.Marker[] — temizlemek için
+  let routesSource = null;   // GeoJSON source (rotalar)
 
   const YEARS = Object.keys(HOLIDAYS).map(Number).sort((a, b) => a - b);
 
@@ -341,30 +343,97 @@
      HARİTA
      ========================================================================= */
   function initMap() {
-    if (map || typeof L === "undefined") return;
-    map = L.map("mapDiv", { scrollWheelZoom: true }).setView([31.5, 31.9], 5);
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 18,
-      attribution: "© OpenStreetMap katkıcıları"
-    }).addTo(map);
-    markerLayer = L.layerGroup().addTo(map);
-    renderMap();
-  }
-
-  function poiIconHtml(cls, inner) {
-    return L.divIcon({
-      className: "",
-      html: `<div class="${cls}">${inner}</div>`,
-      iconSize: [28, 28],
-      iconAnchor: [14, 14]
+    if (map || typeof maplibregl === "undefined") return;
+    map = new maplibregl.Map({
+      container: "mapDiv",
+      style: "https://tiles.openfreemap.org/styles/liberty",
+      center: [31.9, 31.5],
+      zoom: 3.2,
+      attributionControl: false
+    });
+    map.on("error", e => {
+      const msg = e && e.error && e.error.message ? e.error.message : String(e && e.error || e);
+      console.error("Harita hatası:", msg);
+    });
+    map.addControl(new maplibregl.NavigationControl(), "top-right");
+    /* imza satırı: OpenFreeMap/OSM atıfı kendi kontrolümüzde */
+    map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
+    map.on("load", () => {
+      mapReady = true;
+      /* rota katmanları: önce yumuşak "glow", sonra ana çizgiler.
+         line-dasharray data-driven desteklenmediği için tip başına katman + filtre kullanılır. */
+      map.addSource("tt-routes", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+      routesSource = map.getSource("tt-routes");
+      const ortakPaint = { "line-color": ["get", "color"], "line-width": 2.5, "line-opacity": 0.9 };
+      map.addLayer({
+        id: "tt-routes-glow",
+        type: "line",
+        source: "tt-routes",
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { "line-color": ["get", "color"], "line-width": 7, "line-opacity": 0.16 }
+      });
+      /* ✈ uçak + 🚆 tren: noktalı çizgi (Leaflet "3 7" karşılığı) */
+      map.addLayer({
+        id: "tt-routes-nokta",
+        type: "line",
+        source: "tt-routes",
+        filter: ["in", ["get", "kind"], ["literal", ["out", "return", "train"]]],
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { ...ortakPaint, "line-dasharray": [1.2, 2.8] }
+      });
+      /* 🚗 araç: uzun kesikli (Leaflet "10 8" karşılığı) */
+      map.addLayer({
+        id: "tt-routes-arac",
+        type: "line",
+        source: "tt-routes",
+        filter: ["==", ["get", "kind"], "car"],
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { ...ortakPaint, "line-dasharray": [4, 3.2] }
+      });
+      /* rota çizgilerine tıklayınca bilgi kartı açılır */
+      ["tt-routes-nokta", "tt-routes-arac"].forEach(katman => {
+        map.on("click", katman, e => {
+          const p = e.features && e.features[0] && e.features[0].properties;
+          if (!p || !p.popup) return;
+          new maplibregl.Popup({ offset: 6 })
+            .setLngLat(e.lngLat)
+            .setHTML(p.popup)
+            .addTo(map);
+        });
+        map.on("mouseenter", katman, () => { map.getCanvas().style.cursor = "pointer"; });
+        map.on("mouseleave", katman, () => { map.getCanvas().style.cursor = ""; });
+      });
+      renderMap();
     });
   }
 
+  function markerEl(cls, inner) {
+    const el = document.createElement("div");
+    el.className = cls;
+    el.textContent = inner;
+    return el;
+  }
+
+  function popupHtml(kind, lines) {
+    return new maplibregl.Popup({ offset: 26, closeButton: true })
+      .setHTML(`<div class="tt-popup">${lines.map(l => `<div>${l}</div>`).join("")}</div>`);
+  }
+
+  function addMarker(latLng, cls, inner, popup) {
+    const m = new maplibregl.Marker({ element: markerEl(cls, inner), anchor: "center" })
+      .setLngLat(latLng)
+      .addTo(map);
+    if (popup) m.setPopup(popup);
+    markers.push(m);
+  }
+
   function renderMap() {
-    if (!map || !markerLayer) return;
-    markerLayer.clearLayers();
+    if (!map || !mapReady || !routesSource) return;
+    markers.forEach(m => m.remove());
+    markers = [];
     const side = document.getElementById("mapSide");
-    const markers = [];
+    const routeFeatures = [];
+    const boundsPts = [];
 
     /* Veri: AKTİF gezi değil — TÜM geziler haritada gösterilir */
     const trips = TT.all()
@@ -376,28 +445,27 @@
       const tLabel = esc(`${t.emoji || "🧳"} ${t.name}`);
 
       data.flights.forEach(f => {
-        const fromPt = [f.fromPos.lat, f.fromPos.lng];
-        const toPt = [f.toPos.lat, f.toPos.lng];
+        const fromPt = [f.fromPos.lng, f.fromPos.lat];
+        const toPt = [f.toPos.lng, f.toPos.lat];
         const isTrain = f.mode === "train";
         const isCar = f.mode === "car";
         const dist = Math.round(haversineKm(f.fromPos.lat, f.fromPos.lng, f.toPos.lat, f.toPos.lng));
-        markers.push(fromPt, toPt);
+        boundsPts.push(fromPt, toPt);
         /* renkler: uçak mavi (gidiş)/teal (dönüş) · tren amber · araç mor */
-        const lineColor = isCar ? "#8b5cf6" : isTrain ? "#f59e0b" : (f.dir === "out" ? "#2563eb" : "#0d9488");
-        L.polyline([fromPt, toPt], {
-          color: lineColor,
-          weight: 2.5,
-          dashArray: isCar ? "10 8" : "3 7",
-          opacity: 0.85
-        }).addTo(markerLayer)
-          .bindPopup(`<b>${tLabel}</b><br>${isCar ? "🚗 Araç" : isTrain ? "🚆 Tren" : (f.dir === "out" ? "🛫 Gidiş" : "🛬 Dönüş")}: ${f.from} → ${f.to}<br><small>${longDate(f.date)}${f.time ? ` · Saat ${f.time}${f.timeArr ? " → " + f.timeArr : ""}` : ""} · ≈${dist} km</small>`);
+        const kind = isCar ? "car" : isTrain ? "train" : (f.dir === "out" ? "out" : "return");
+        const color = isCar ? "#8b5cf6" : isTrain ? "#f59e0b" : (f.dir === "out" ? "#2563eb" : "#0d9488");
+        routeFeatures.push({
+          type: "Feature",
+          properties: { kind, color, popup: `<div class="tt-popup"><div><b>${tLabel}</b></div><div>${isCar ? "🚗 Araç" : isTrain ? "🚆 Tren" : (f.dir === "out" ? "🛫 Gidiş" : "🛬 Dönüş")}: <b>${f.from} → ${f.to}</b></div><small>${longDate(f.date)}${f.time ? ` · Saat ${f.time}${f.timeArr ? " → " + f.timeArr : ""}` : ""} · ≈${dist} km</small></div>` },
+          geometry: { type: "LineString", coordinates: [fromPt, toPt] }
+        });
       });
 
       data.hotels.forEach(h => {
-        markers.push([h.pos.lat, h.pos.lng]);
-        L.marker([h.pos.lat, h.pos.lng], { icon: poiIconHtml("hotel-icon", "🏨") })
-          .addTo(markerLayer)
-          .bindPopup(`<b>${esc(h.name)}</b><br><small>${tLabel}</small><br>${esc(h.city)}${h.area ? ", " + esc(h.area) : ""}${h.checkIn ? `<br>${h.checkIn} → ${h.checkOut || "—"}` : ""}${h.link ? `<br><a href="${esc(h.link)}" target="_blank" rel="noopener">otel sayfası</a>` : ""}`);
+        const pt = [h.pos.lng, h.pos.lat];
+        boundsPts.push(pt);
+        addMarker(pt, "hotel-icon", "🏨",
+          popupHtml("hotel", [`<b>${esc(h.name)}</b>`, `<small>${tLabel}</small>`, `<small>${esc(h.city)}${h.area ? ", " + esc(h.area) : ""}</small>`, h.checkIn ? `<small>${h.checkIn} → ${h.checkOut || "—"}</small>` : "", h.link ? `<small><a href="${esc(h.link)}" target="_blank" rel="noopener">otel sayfası</a></small>` : ""].filter(Boolean)));
       });
     });
 
@@ -409,11 +477,12 @@
       });
     });
     airportSet.forEach(a => {
-      markers.push([a.lat, a.lng]);
-      L.marker([a.lat, a.lng], { icon: poiIconHtml("poi-icon", a.code) })
-        .addTo(markerLayer)
-        .bindPopup(`<b>${a.code}</b> ${a.name}`);
+      const pt = [a.lng, a.lat];
+      boundsPts.push(pt);
+      addMarker(pt, "poi-icon", a.code, popupHtml("poi", [`<b>${a.code}</b> ${esc(a.name)}`]));
     });
+
+    routesSource.setData({ type: "FeatureCollection", features: routeFeatures });
 
     /* ---- Yan panel: gezi başına grup ---- */
     side.innerHTML = trips.map(({ t, data }) => {
@@ -452,16 +521,21 @@
     side.querySelectorAll("[data-act]").forEach(li => {
       li.addEventListener("click", () => {
         if (li.dataset.act === "focus") {
-          map.flyTo([+li.dataset.lat, +li.dataset.lng], +(li.dataset.zoom || 12));
+          map.flyTo({ center: [+li.dataset.lng, +li.dataset.lat], zoom: +(li.dataset.zoom || 12), duration: 900 });
         } else if (li.dataset.act === "route") {
           const [a, b, c, d] = li.dataset.fl.split(",").map(Number);
-          map.flyToBounds([[a, b], [c, d]], { padding: [40, 40] });
+          map.fitBounds([[Math.min(b, d), Math.min(a, c)], [Math.max(b, d), Math.max(a, c)]], { padding: 60, duration: 900 });
         }
       });
     });
 
-    if (markers.length) {
-      map.fitBounds(L.latLngBounds(markers).pad(0.35));
+    if (boundsPts.length) {
+      const lngs = boundsPts.map(p => p[0]);
+      const lats = boundsPts.map(p => p[1]);
+      map.fitBounds(
+        [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
+        { padding: 60, duration: 800, maxZoom: 5.2 }
+      );
     }
   }
 
@@ -475,7 +549,7 @@
       p.classList.toggle("active", p.id === `tab-${name}`));
     if (name === "harita") {
       initMap();
-      if (map) setTimeout(() => map.invalidateSize(), 60);
+      if (map) setTimeout(() => map.resize(), 60);
     }
   }
 
@@ -484,7 +558,7 @@
     renderMonths();
     renderHolidayList();
     TT.setTripHtml(document.getElementById("tripMain"));
-    if (markerLayer) renderMap();
+    if (map) renderMap();
   }
 
   function boot() {
