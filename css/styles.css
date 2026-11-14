@@ -579,7 +579,28 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px 26px 60px; }
 .map-side li .m-emoji { width: 20px; text-align: center; }
 .map-side li small { color: var(--muted); }
 
-.leaflet-popup-content b { font-size: 0.95rem; }
+/* ---- MapLibre popup stilleri ---- */
+.maplibregl-popup-content {
+  padding: 10px 14px;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, .18);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+.maplibregl-popup-content .tt-popup b { font-size: 0.95rem; }
+.maplibregl-popup-content small { color: var(--muted); }
+.maplibregl-popup-close-button {
+  font-size: 16px;
+  padding: 2px 6px;
+  color: var(--muted);
+}
+.maplibregl-popup-anchor-top .maplibregl-popup-tip { border-bottom-color: #fff; }
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: #fff; }
+.maplibregl-ctrl-group {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, .18);
+}
 .poi-icon, .hotel-icon {
   display: flex;
   align-items: center;
