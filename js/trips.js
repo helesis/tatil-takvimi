@@ -9,7 +9,7 @@
    ============================================================ */
 
 const TT = (() => {
-  const LS_KEY = "tatilTakvimi.trips.v20";
+  const LS_KEY = "tatilTakvimi.trips.v21";
 
   const DEFAULT_TRIPS = [
     {
@@ -208,6 +208,9 @@ const TT = (() => {
           checkIn: "2026-12-13", checkOut: "2026-12-15", price: "", link: "",
           note: "5★ · giriş 15:00, çıkış 12:00 · program no: 72081155966960", coords: ""
         }
+      ],
+      weatherStops: [
+        { city: "Şarm El Şeyh", start: "2026-12-15", end: "2026-12-19" }
       ]
     },
     {
@@ -266,6 +269,9 @@ const TT = (() => {
         }
       ],
       hotels: [],
+      weatherStops: [
+        { city: "Los Angeles", start: "2027-01-27", end: "2027-02-03" }
+      ],
       itinerary: [
         {
           date: "2027-01-27",
@@ -463,6 +469,7 @@ const TT = (() => {
     if (!mainEl) return;
     mainEl.innerHTML = buildMainHtml();
     bind(mainEl);
+    updateWeather(mainEl);
   }
 
   function buildMainHtml() {
@@ -542,7 +549,9 @@ const TT = (() => {
       </div>
       ${hotelFormHtml(t)}
 
+      ${weatherBoxHtml(t)}
       ${itineraryHtml(t)}
+      ${checklistHtml(t)}
     `;
   }
 
@@ -798,6 +807,433 @@ const TT = (() => {
     `;
   }
 
+  /* ---------- valiz hazırlama kontrol listeleri (geziye özel) ---------- */
+  const DEFAULT_CHECKLISTS = {
+    "munih-viyana-2026": [
+      { emoji: "🧥", title: "Kıyafetler", items: [
+        "1 adet rüzgâr ve yağmura dayanıklı mont veya kaban",
+        "2 adet kazak / sweatshirt",
+        "3 adet uzun kollu üst veya tişört",
+        "2 adet pantolon (biri üzerinizde)",
+        "1 adet şık akşam kombini (Chez Bernard için)",
+        "4 adet iç çamaşırı",
+        "4 çift çorap (en az 1 çift kalın)",
+        "1 takım pijama",
+        "1 adet atkı",
+        "1 adet bere",
+        "1 çift ince eldiven (isteğe bağlı)"
+      ]},
+      { emoji: "👟", title: "Ayakkabı ve aksesuar", items: [
+        "1 çift rahat, suya dayanıklı yürüyüş ayakkabısı (ayakta)",
+        "1 çift alternatif / şık ayakkabı (isteğe bağlı)",
+        "1 adet küçük günlük sırt çantası veya çapraz çanta",
+        "1 adet katlanabilir şemsiye",
+        "1 adet güneş gözlüğü"
+      ]},
+      { emoji: "🪥", title: "Kişisel bakım", items: [
+        "Diş fırçaları ve diş macunu",
+        "Deodorant ve parfüm",
+        "Yüz temizleme ve nemlendirici",
+        "Dudak nemlendiricisi",
+        "Saç fırçası ve saç bakım ürünleri",
+        "Tıraş / makyaj malzemeleri (gerekiyorsa)",
+        "Kişisel ilaçlar ve küçük ilk yardım seti",
+        "Islak mendil ve kâğıt mendil"
+      ]},
+      { emoji: "📱", title: "Elektronik", items: [
+        "Telefonlar ve şarj kabloları",
+        "Powerbank",
+        "Kulaklık",
+        "Akıllı saat şarj cihazı (kullanılıyorsa)",
+        "Avrupa'da kullanım için mobil internet / roaming ayarı",
+        "Telefonlarda çevrimdışı Münih ve Viyana haritaları"
+      ]},
+      { emoji: "🛂", title: "Belgeler ve para", items: [
+        "Her iki yolcunun pasaportu",
+        "Geçerli Schengen vizesi / giriş hakkı (gerekiyorsa)",
+        "Uçak biletleri ve check-in belgeleri",
+        "18 Kasım DB tren biletleri ve koltuk rezervasyonu",
+        "Münih ve Viyana otel rezervasyonları",
+        "Seyahat sağlık sigortası",
+        "Banka/kredi kartları",
+        "Bir miktar euro nakit",
+        "Önemli rezervasyonların telefonda çevrimdışı kopyaları"
+      ]},
+      { emoji: "🎒", title: "El bagajı", items: [
+        "Pasaportlar ve biletler",
+        "Cüzdan ve telefonlar",
+        "Powerbank ve şarj kabloları",
+        "İlaçlar ve gerekli kişisel eşyalar",
+        "Küçük atıştırmalıklar",
+        "Boş veya güvenlikten sonra doldurulmuş su şişesi",
+        "Yedek bir üst ve iç çamaşırı",
+        "Mendil ve dudak kremi"
+      ]}
+    ],
+    "vietnam-2026": [
+      { emoji: "🧥", title: "Kıyafetler (sıcak & nemli · kuzeyde serin akşamlar)", items: [
+        "Hafif, terletmeyen kumaş kıyafetler (gün sayısınca üst/alt)",
+        "1 adet ince yağmurluk veya rüzgârlık (tekne & Hanoi akşamları)",
+        "1 adet hafif kazak / sweatshirt (Hanoi + Ha Long akşamı ~15-20°)",
+        "1 adet şık akşam kombini (Michelin restoran için)",
+        "2 adet mayo / pareo (Lan Ha Bay & Da Nang)",
+        "İç çamaşırı ve çorap (gün sayısınca + 1 yedek)",
+        "1 takım pijama"
+      ]},
+      { emoji: "👟", title: "Ayakkabı ve aksesuar", items: [
+        "1 çift rahat yürüyüş ayakkabısı (Mua Cave ~500 basamak için)",
+        "1 çift sandalet / terlik",
+        "1 çift su ayakkabısı (tekne & kayak)",
+        "1 adet güneş şapkası / şapka",
+        "1 adet güneş gözlüğü",
+        "1 adet küçük çapraz çanta (scooter/city için)"
+      ]},
+      { emoji: "🪥", title: "Kişisel bakım & sağlık", items: [
+        "Böcek kovucu (DEET'li — yıldız ateşi riskine karşı)",
+        "Güneş kremi SPF 50+",
+        "İshal ilacı + elektrolit tozu (seyahat hastalığına karşı)",
+        "Islak mendil ve el dezenfektanı",
+        "Kişisel ilaçlar ve küçük ilk yardım seti",
+        "Diş fırçaları, deodorant, dudak kremi (standart set)"
+      ]},
+      { emoji: "📱", title: "Elektronik", items: [
+        "Telefonlar ve şarj kabloları",
+        "Powerbank (uçuşlar uzun)",
+        "Kulaklık",
+        "Vietnam eSIM / roaming aktivasyonu",
+        "Çevrimdışı Hanoi, Da Nang, Hoi An haritaları",
+        "Google Translate Vietnamca çevrimdışı paketi"
+      ]},
+      { emoji: "🛂", title: "Belgeler ve para", items: [
+        "3 yolcunun pasaportu (en az 6 ay geçerli)",
+        "Vietnam e-vizesi — basılmış çıktılar",
+        "6 uçuş segmentinin biletleri (THY + Sun PhuQuoc)",
+        "Otel rezervasyonları (De Syloia, Athena Cruise, Le Sands)",
+        "Seyahat sağlık sigortası",
+        "Banka/kredi kartları + yedek kart",
+        "USD nakit (vize harcı + bahşiş) · ufak tutarda VND"
+      ]},
+      { emoji: "🎒", title: "El bagajı (uçuşlar 1 parça kayıtlı bagaj)", items: [
+        "Pasaportlar + e-vize çıktıları",
+        "Cüzdan ve telefonlar",
+        "Powerbank ve kablolar",
+        "İlaçlar ve kişisel eşyalar",
+        "Boyun yastığı + kulak tıkacı + göz maskesi (gece uçuşları)",
+        "Küçük atıştırmalıklar",
+        "Boş su şişesi + yedek üst"
+      ]}
+    ],
+    "misir-2026": [
+      { emoji: "🧥", title: "Kıyafetler (ılık–sıcak · 20-25°)", items: [
+        "Hafif yazlık kıyafetler (gün sayısınca)",
+        "1 adet ince uzun kollu gömlek (güneş + akşam serinliği)",
+        "2 adet mayo / bikini (Şarm El Şeyh)",
+        "1 pareo veya şort",
+        "1 adet şık akşam kombini",
+        "İç çamaşırı ve çorap (gün sayısınca)",
+        "1 takım pijama"
+      ]},
+      { emoji: "👟", title: "Ayakkabı ve aksesuar", items: [
+        "1 çift rahat yürüyüş ayakkabısı (piramit/tarihi alanlar)",
+        "1 çift sandalet / terlik",
+        "1 çift su ayakkabısı (şnorkel & mercan)",
+        "1 adet geniş güneş şapkası",
+        "1 adet güneş gözlüğü",
+        "1 adet küçük çanta"
+      ]},
+      { emoji: "🪥", title: "Kişisel bakım & sağlık", items: [
+        "Güneş kremi SPF 50+ (yeterli olsun)",
+        "Aloe vera / after-sun nemlendirici",
+        "Böcek kovucu",
+        "İshal ilacı + elektrolit tozu",
+        "Dudak kremi (kuru hava)",
+        "Kişisel ilaçlar ve küçük ilk yardım seti",
+        "Islak mendil"
+      ]},
+      { emoji: "📱", title: "Elektronik", items: [
+        "Telefonlar ve şarj kabloları",
+        "Powerbank",
+        "Kulaklık",
+        "Telefon için su geçirmez poşet (plaj/tekne)",
+        "Mısır eSIM / roaming",
+        "Çevrimdışı Kahire haritası"
+      ]},
+      { emoji: "🛂", title: "Belgeler ve para", items: [
+        "Yolcuların pasaportu (en az 6 ay geçerli)",
+        "Mısır vizesi (varışta / e-visa çıktısı)",
+        "Uçak biletleri (XQ224 gidiş · PC5089 dönüş)",
+        "Otel rezervasyonları (Sofitel Kahire + Şarm oteli)",
+        "Seyahat sağlık sigortası",
+        "Banka/kredi kartları",
+        "USD/EUR nakit (bahşiş için) · ufak EGP"
+      ]},
+      { emoji: "🎒", title: "El bagajı", items: [
+        "Pasaportlar ve biletler",
+        "Cüzdan ve telefonlar",
+        "Powerbank ve kablolar",
+        "İlaçlar ve kişisel eşyalar",
+        "Şnorkel maskesi (isteğe bağlı — havayolu izin verir)",
+        "Küçük atıştırmalıklar + boş su şişesi",
+        "Yedek üst ve iç çamaşırı"
+      ]}
+    ],
+    "caeli-canakkale-2026": [
+      { emoji: "🧥", title: "Kıyafetler (kışlık · 5-12°, yağmurlu olabilir)", items: [
+        "1 adet kalın mont veya kaban",
+        "2-3 adet kazak / triko",
+        "2 adet pantolon (biri üzerinizde)",
+        "1 adet şık akşam kombini (winery yemeği için)",
+        "İç çamaşırı ve yün çorap (2 gece + yedek)",
+        "1 takım pijama",
+        "Atkı + bere + eldiven"
+      ]},
+      { emoji: "👟", title: "Ayakkabı ve aksesuar", items: [
+        "1 çift su geçirmez rahat ayakkabı / bot",
+        "1 çift alternatif ayakkabı",
+        "1 adet katlanabilir şemsiye",
+        "1 adet küçük çanta"
+      ]},
+      { emoji: "🪥", title: "Kişisel bakım", items: [
+        "Diş fırçaları ve diş macunu",
+        "Deodorant, nemlendirici",
+        "Dudak kremi (soğuk hava)",
+        "Kişisel ilaçlar ve küçük ilk yardım seti",
+        "Islak mendil"
+      ]},
+      { emoji: "🚗", title: "Araç (27-29 Ara yolculuğu)", items: [
+        "Ehliyet + araç ruhsatı + kasko belgesi",
+        "Üçgen reflektör + reflektörlü yelek (bagajda)",
+        "Cam suyu / antifriz kontrolü (hareket öncesi)",
+        "Yedek anahtar",
+        "Telefon tutucu + şarj kablosu",
+        "Çevrimdışı haritalar / navigasyon"
+      ]},
+      { emoji: "🛂", title: "Belgeler ve para", items: [
+        "Kimlik kartları (oteller için)",
+        "Hotel Caeli rezervasyonu",
+        "Seyahat sağlık sigortası (isteğe bağlı)",
+        "Banka/kredi kartları",
+        "Bir miktar TL nakit"
+      ]},
+      { emoji: "🎒", title: "Araç içi / yol", items: [
+        "Yol atıştırmalıkları ve su",
+        "Müzik listesi / podcast",
+        "Şarap dönüşü için koruyucu taşıma (köpük/karton)",
+        "Boyun yastığı (yolcu için)"
+      ]}
+    ],
+    "los-angeles-2027": [
+      { emoji: "🧥", title: "Kıyafetler (gündüz 18-22° · akşam serin — katmanlı giyinin)", items: [
+        "Tişörtler + 1-2 hafif gömlek (katman için)",
+        "1 adet sweatshirt / hafif kazak",
+        "1 adet orta kalınlık mont (akşam & LAX 04:25 sabah soğuğu)",
+        "2 adet pantolon (biri üzerinizde)",
+        "1 adet şık akşam kombini",
+        "1 adet mayo (Santa Monica / Venice plajları)",
+        "İç çamaşırı ve çorap (gün sayısınca)",
+        "1 takım pijama"
+      ]},
+      { emoji: "👟", title: "Ayakkabı ve aksesuar", items: [
+        "1 çift rahat sneakers (çok yürünecek)",
+        "1 çift sandalet",
+        "1 adet güneş gözlüğü",
+        "1 adet şapka",
+        "1 adet küçük günlük çanta"
+      ]},
+      { emoji: "🪥", title: "Kişisel bakım", items: [
+        "Güneş kremi SPF 30+",
+        "Dudak kremi (kuru California havası)",
+        "Diş fırçaları, deodorant, nemlendirici",
+        "Kişisel ilaçlar ve küçük ilk yardım seti",
+        "Islak mendil"
+      ]},
+      { emoji: "📱", title: "Elektronik", items: [
+        "ABD priz adaptörü (Type A/B) — mutlaka",
+        "Telefonlar ve şarj kabloları",
+        "Powerbank (13+ saat uçuşlar)",
+        "Kulaklık + boyun yastığı",
+        "ABD eSIM / roaming aktivasyonu",
+        "Çevrimdışı Los Angeles haritası"
+      ]},
+      { emoji: "🛂", title: "Belgeler ve para", items: [
+        "3 yolcunun pasaportu (en az 6 ay geçerli)",
+        "ABD vizesi (B1/B2) — geçerliliğini hareket öncesi kontrol edin",
+        "Uçuş biletleri (TK2445/TK179 gidiş · TK10/TK2430 dönüş · VANWNF)",
+        "Seyahat sağlık sigortası (ABD sağlık sistemi pahalı)",
+        "Banka/kredi kartları",
+        "USD nakit (bahşiş kültürü: %15-20)",
+        "Otel/etkinlik rezervasyonlarının kopyaları"
+      ]},
+      { emoji: "🎒", title: "El bagajı (13s 50dk + 13s 25dk uçuşlar)", items: [
+        "Pasaportlar + vize belgeleri",
+        "Cüzdan ve telefonlar",
+        "Powerbank ve kablolar",
+        "Boyun yastığı + kulak tıkacı + göz maskesi",
+        "İlaçlar ve kişisel eşyalar",
+        "Küçük atıştırmalıklar",
+        "Boş su şişesi + yedek üst + iç çamaşırı",
+        "Kozmetik sıvılar 100 ml kuralına uygun"
+      ]}
+    ]
+  };
+
+  /* Checklist durumu: localStorage'da (açık/kapalı + işaretli maddeler) */
+  const CL_LS = "tatilTakvimi.checklist.v1";
+  let clState = {};
+  try { clState = JSON.parse(localStorage.getItem(CL_LS) || "{}") || {}; } catch (e) { clState = {}; }
+  function clOf(tripId) {
+    if (!clState[tripId]) clState[tripId] = { acik: false, isaretli: [] };
+    return clState[tripId];
+  }
+  function clSave() {
+    try { localStorage.setItem(CL_LS, JSON.stringify(clState)); } catch (e) {}
+  }
+
+  function checklistHtml(t) {
+    const cats = DEFAULT_CHECKLISTS[t.id];
+    if (!cats) return "";
+    const st = clOf(t.id);
+    const toplam = cats.reduce((n, c) => n + c.items.length, 0);
+    const acik = !!st.acik;
+    return `
+      <div class="section-bar" style="margin-top:26px">
+        <h2 style="margin:0">🧳 Valiz hazırlama kontrol listesi <small style="color:var(--muted);font-weight:600">${st.isaretli.length}/${toplam}</small></h2>
+        <button class="btn small" data-action="cl-toggle">${acik ? "▲ Kapat" : "▼ Aç"}</button>
+      </div>
+      ${acik
+        ? cats.map(c => `
+          <div class="card cl-cat">
+            <h3 class="cl-title">${c.emoji} ${esc(c.title)}</h3>
+            <ul class="cl-list">
+              ${c.items.map(it => {
+                const ok = st.isaretli.includes(it);
+                return `<li class="cl-item ${ok ? "ok" : ""}" data-action="cl-check" data-cl="${esc(it)}">
+                  <span class="cl-box">${ok ? "☑" : "☐"}</span><span class="cl-text">${esc(it)}</span>
+                </li>`;
+              }).join("")}
+            </ul>
+          </div>`).join("")
+        : `<div class="empty-note">Liste kapalı — valiz hazırlarken açın. İşaretlemeleriniz tarayıcıda saklanır.</div>`}
+    `;
+  }
+
+  /* ---------- hava durumu (Open-Meteo — ücretsiz, API anahtarı gerekmez) ---------- */
+  const WX_CODES = {
+    0: ["☀️", "Açık"], 1: ["🌤️", "Az bulutlu"], 2: ["⛅", "Parçalı bulutlu"], 3: ["☁️", "Kapalı"],
+    45: ["🌫️", "Sis"], 48: ["🌫️", "Kırağılı sis"],
+    51: ["🌦️", "Hafif çisenti"], 53: ["🌦️", "Çisenti"], 55: ["🌦️", "Yoğun çisenti"],
+    56: ["🌧️", "Donan çisenti"], 57: ["🌧️", "Yoğun donan çisenti"],
+    61: ["🌧️", "Hafif yağmur"], 63: ["🌧️", "Yağmur"], 65: ["🌧️", "Şiddetli yağmur"],
+    66: ["🌧️", "Donan yağmur"], 67: ["🌧️", "Şiddetli donan yağmur"],
+    71: ["🌨️", "Hafif kar"], 73: ["🌨️", "Kar"], 75: ["❄️", "Şiddetli kar"], 77: ["🌨️", "Kar taneleri"],
+    80: ["🌦️", "Hafif sağanak"], 81: ["🌧️", "Sağanak"], 82: ["⛈️", "Şiddetli sağanak"],
+    85: ["🌨️", "Kar sağanağı"], 86: ["❄️", "Şiddetli kar sağanağı"],
+    95: ["⛈️", "Gök gürültülü fırtına"], 96: ["⛈️", "Fırtına + dolu"], 99: ["⛈️", "Şiddetli fırtına + dolu"]
+  };
+  const wxCache = new Map();   // key → { at, data } — 10 dk TTL
+  let wxToken = 0;             // eski async doldurmaları geçersiz kılmak için
+
+  function wxClampRange(start, end) {
+    const today = todayKey();
+    const maxEnd = shiftKey(today, 15);
+    const s = start < today ? today : start;
+    const e = end > maxEnd ? maxEnd : end;
+    return { s, e, disinda: s > e, kalanVar: e < end };
+  }
+
+  function weatherStopsOf(t) {
+    const stops = [];
+    const push = (city, s, e) => {
+      const c = CITY_CENTERS.find(x => x.name.toLowerCase() === String(city).toLowerCase());
+      if (c && s && e && s <= e) stops.push({ city, lat: c.lat, lng: c.lng, start: s, end: e });
+    };
+    (t.weatherStops || []).forEach(w => push(w.city, w.start, w.end));
+    t.hotels
+      .filter(h => h.checkIn)
+      .sort((a, b) => (a.checkIn || "").localeCompare(b.checkIn || ""))
+      .forEach(h => push(h.city, h.checkIn, h.checkOut || h.checkIn));
+    stops.sort((a, b) => a.start.localeCompare(b.start));
+    return stops;
+  }
+
+  function weatherBoxHtml(t) {
+    const stops = weatherStopsOf(t);
+    if (!stops.length) return "";
+    return `
+      <div class="section-bar" style="margin-top:26px">
+        <h2 style="margin:0">🌤️ Hava durumu <small style="color:var(--muted);font-weight:600">Open-Meteo · site açılınca güncellenir</small></h2>
+      </div>
+      <div class="wx-list">
+        ${stops.map((w, i) => `
+          <div class="card wx-card" data-wx="${i}">
+            <h4 class="wx-city">${esc(w.city)} <small>${shortDay(w.start)} – ${shortDay(w.end)}</small></h4>
+            <div class="wx-days"><span class="wx-note">Yükleniyor…</span></div>
+          </div>`).join("")}
+      </div>
+    `;
+  }
+
+  async function wxFetch(w, s, e) {
+    const key = `${w.lat}|${w.lng}|${s}|${e}`;
+    const hit = wxCache.get(key);
+    if (hit && Date.now() - hit.at < 10 * 60 * 1000) return hit.data;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${w.lat}&longitude=${w.lng}` +
+      `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max` +
+      `&timezone=auto&start_date=${s}&end_date=${e}`;
+    try {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error("http " + r.status);
+      const j = await r.json();
+      const data = j.daily;
+      wxCache.set(key, { at: Date.now(), data });
+      return data;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  async function fillWeatherStop(mainEl, token, w, i) {
+    const { s, e, disinda, kalanVar } = wxClampRange(w.start, w.end);
+    if (disinda) {
+      const el = mainEl.querySelector(`[data-wx="${i}"] .wx-days`);
+      if (el && token === wxToken) {
+        el.innerHTML = `<div class="wx-note">📅 Tahmin aralığında değil — geziye 15 gün kala burada otomatik görünecek.</div>`;
+      }
+      return;
+    }
+    const data = await wxFetch(w, s, e);
+    if (token !== wxToken) return; /* bu arada yeni render oldu → geç */
+    const el = mainEl.querySelector(`[data-wx="${i}"] .wx-days`);
+    if (!el) return;
+    if (!data) {
+      el.innerHTML = `<div class="wx-note">Hava durumu yüklenemedi — internet bağlantısını kontrol edin.</div>`;
+      return;
+    }
+    const gunler = data.time.map((d, k) => {
+      const c = WX_CODES[data.weather_code[k]] || ["🌡️", ""];
+      const dt = parseKey(d);
+      const wd = WEEKDAY_SHORT[(dt.getDay() + 6) % 7];
+      const yagis = data.precipitation_probability_max ? data.precipitation_probability_max[k] : null;
+      return `<div class="wx-day">
+        <div class="wd">${dt.getDate()} <small>${wd}</small></div>
+        <div class="ic" title="${esc(c[1])}">${c[0]}</div>
+        <div class="t">${Math.round(data.temperature_2m_max[k])}°<small>${Math.round(data.temperature_2m_min[k])}°</small></div>
+        ${yagis != null ? `<div class="p">💧 ${yagis}%</div>` : ""}
+      </div>`;
+    }).join("");
+    el.innerHTML = `<div class="wx-row">${gunler}</div>` +
+      (kalanVar ? `<div class="wx-note">📅 ${shortDay(shiftKey(e, 1))} sonrası tahmin aralığına girince otomatik eklenir.</div>` : "");
+  }
+
+  function updateWeather(mainEl) {
+    const t = active();
+    if (!t || !mainEl) return;
+    const stops = weatherStopsOf(t);
+    if (!stops.length) return;
+    const token = ++wxToken;
+    stops.forEach((w, i) => { fillWeatherStop(mainEl, token, w, i); });
+  }
+
   /* ---------- olay bağlama ---------- */
   function bind(root) {
     root.querySelectorAll("[data-action]").forEach(btn => {
@@ -815,6 +1251,20 @@ const TT = (() => {
           case "cancel": formFlight = null; formHotel = null; formTrip = null; break;
           case "del-flight": deleteFlight(t.id, btn.dataset.fid); break;
           case "del-hotel": deleteHotel(t.id, btn.dataset.hid); break;
+          case "cl-toggle": {
+            const s = clOf(t.id);
+            s.acik = !s.acik;
+            clSave();
+            break;
+          }
+          case "cl-check": {
+            const s = clOf(t.id);
+            const lbl = btn.dataset.cl;
+            const ix = s.isaretli.indexOf(lbl);
+            if (ix >= 0) s.isaretli.splice(ix, 1); else s.isaretli.push(lbl);
+            clSave();
+            break;
+          }
         }
         render(root);
       });
