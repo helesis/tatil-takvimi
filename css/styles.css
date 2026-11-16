@@ -527,6 +527,49 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px 26px 60px; }
 
 /* ---------- 11. GÜN GÜN PROGRAM ---------- */
 .it-list { display: flex; flex-direction: column; gap: 10px; }
+
+/* ---- Valiz kontrol listesi ---- */
+.cl-cat { margin-top: 10px; }
+.cl-title { margin: 0 0 8px; font-size: 0.95rem; }
+.cl-list { list-style: none; margin: 0; padding: 0; }
+.cl-item {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease);
+  border-radius: 6px;
+}
+.cl-item:last-child { border-bottom: 0; }
+.cl-item:hover { background: var(--soft); }
+.cl-item .cl-box { font-size: 1.05rem; line-height: 1; }
+.cl-item.ok .cl-text { text-decoration: line-through; color: var(--muted); }
+.cl-item.ok .cl-box { color: var(--teal); }
+
+/* ---- Hava durumu (Open-Meteo) ---- */
+.wx-list { display: flex; flex-direction: column; gap: 10px; }
+.wx-card .wx-city { margin: 0 0 8px; font-size: 0.95rem; }
+.wx-card .wx-city small { color: var(--muted); font-weight: 500; }
+.wx-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+.wx-day {
+  flex: 0 0 auto;
+  min-width: 64px;
+  text-align: center;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 6px;
+}
+.wx-day .wd { font-size: 0.82rem; font-weight: 700; }
+.wx-day .wd small { display: block; color: var(--muted); font-weight: 500; font-size: 0.68rem; }
+.wx-day .ic { font-size: 1.25rem; margin: 2px 0; }
+.wx-day .t { font-size: 0.85rem; font-weight: 700; }
+.wx-day .t small { display: block; color: var(--muted); font-weight: 500; font-size: 0.7rem; }
+.wx-day .p { font-size: 0.68rem; color: var(--muted); }
+.wx-note { color: var(--muted); font-size: 0.8rem; }
 .it-card {
   display: flex;
   gap: 16px;
