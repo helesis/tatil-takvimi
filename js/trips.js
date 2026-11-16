@@ -9,7 +9,7 @@
    ============================================================ */
 
 const TT = (() => {
-  const LS_KEY = "tatilTakvimi.trips.v19";
+  const LS_KEY = "tatilTakvimi.trips.v20";
 
   const DEFAULT_TRIPS = [
     {
@@ -88,7 +88,7 @@ const TT = (() => {
             "13:30–14:30 Hernstorferstraße 14",
             "14:30–16:30 Donauturm / Schönbrunn",
             "16:30–18:00 Otele dönüş ve dinlenme",
-            "19:00–21:00 Chez Bernard — akşam yemeği"
+            "20:00 Chez Bernard — akşam yemeği · REZERVASYON ONAYLANDI ✓ (2 kişi · Salon: Restaurant · Zenchef)"
           ]
         },
         {
