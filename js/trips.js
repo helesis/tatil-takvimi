@@ -9,7 +9,7 @@
    ============================================================ */
 
 const TT = (() => {
-  const LS_KEY = "tatilTakvimi.trips.v14";
+  const LS_KEY = "tatilTakvimi.trips.v19";
 
   const DEFAULT_TRIPS = [
     {
@@ -45,6 +45,63 @@ const TT = (() => {
           id: "mh-hotel-vie", name: "Leonardo Hotel Vienna Hauptbahnhof", city: "Viyana", area: "Hauptbahnhof",
           checkIn: "2026-11-18", checkOut: "2026-11-20", price: "", link: "",
           note: "Onaylandı ✓ · giriş 15:00, çıkış 12:00", coords: ""
+        }
+      ],
+      itinerary: [
+        {
+          date: "2026-11-17",
+          title: "Münih",
+          lines: [
+            "07:00 Antalya → Münih uçuşu (XQ132)",
+            "08:30 Münih'e varış",
+            "10:00 Maritim Hotel — valiz bırakma",
+            "11:00–12:30 Brandy Melville & Subdued",
+            "12:30–13:30 Öğle yemeği (FÉLA Cafe / Gigi Trattoria)",
+            "13:30–14:00 Asamkirche",
+            "14:00–15:30 Marienplatz",
+            "15:30–16:30 Residenz Christmas Village",
+            "Akşam: dinlenme ve akşam yemeği"
+          ]
+        },
+        {
+          date: "2026-11-18",
+          title: "Münih → Viyana",
+          lines: [
+            "08:30–09:30 Otelde kahvaltı",
+            "09:30–10:30 Serbest zaman",
+            "10:30–11:15 Valizleri alma",
+            "11:15 Münih Hbf'e hareket",
+            "12:09 Münih → Viyana treni (16:47 Wien Hbf varış)",
+            "17:30–18:30 Leonardo Hotel — yerleşme",
+            "19:00–21:00 Rathausplatz Noel pazarı",
+            "21:00 sonrası: otele dönüş"
+          ]
+        },
+        {
+          date: "2026-11-19",
+          title: "Viyana",
+          lines: [
+            "08:30–09:30 Otelde kahvaltı",
+            "10:00–11:00 Votivkirche",
+            "11:00–12:30 Viyana tarihi merkezi",
+            "12:30–13:30 Öğle yemeği (ONYX / Le Fou)",
+            "13:30–14:30 Hernstorferstraße 14",
+            "14:30–16:30 Donauturm / Schönbrunn",
+            "16:30–18:00 Otele dönüş ve dinlenme",
+            "19:00–21:00 Chez Bernard — akşam yemeği"
+          ]
+        },
+        {
+          date: "2026-11-20",
+          title: "Viyana → Antalya",
+          lines: [
+            "08:30–09:30 Otelde kahvaltı",
+            "09:30–10:30 Son gezinti ve alışveriş",
+            "10:30–11:00 Valizleri alma",
+            "11:00 Havalimanına hareket",
+            "13:55 Viyana → Antalya uçuşu (XQ191)",
+            "18:40 Antalya'ya varış"
+          ]
         }
       ]
     },
